@@ -70,7 +70,6 @@ model File {
   id               String   @id @default(cuid())
   originalFilename String
   storedFilename   String   @unique
-  filePath         String   @unique
   mimeType         String?
   fileSize         Int
   uploadedAt       DateTime @default(now())

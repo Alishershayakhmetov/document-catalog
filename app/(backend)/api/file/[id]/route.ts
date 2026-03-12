@@ -1,13 +1,25 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  parseFilesFormData,
+  saveFilesToFolder,
+} from "@/lib/server/file-upload.service";
+import path from "path";
+import fs from "fs/promises";
+
+type Params = {
+  params: Promise<{
+    folderId: string;
+  }>;
+};
 
 export async function GET(
-	_request: Request,
-  { params }: { params: { id: string } }
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
-	const file = await prisma.file.findUnique({
+  const file = await prisma.file.findUnique({
     where: { id },
   });
 
@@ -15,7 +27,19 @@ export async function GET(
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(file);
+  const filePath = path.join(process.cwd(), "..", "uploads", file.folderId, file.storedFilename);
+  console.log(filePath);
+  const fileBuffer = await fs.readFile(filePath);
+
+  const encodedFilename = encodeURIComponent(file.systemName);
+
+  return new NextResponse(fileBuffer, {
+    status: 200,
+    headers: {
+      "Content-Type": file.mimeType || "application/octet-stream",
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodedFilename}`,
+    },
+  });
 }
 
 export async function DELETE(
@@ -45,9 +69,9 @@ export async function DELETE(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   let body: Partial<{
     date: string;
@@ -83,7 +107,7 @@ export async function PATCH(
   try {
     const updatedFile = await prisma.file.update({
       where: { id },
-      data: updateData,
+      data: {...updateData, date: new Date(updateData.date)},
     });
 
     return NextResponse.json(updatedFile);
@@ -93,6 +117,47 @@ export async function PATCH(
     }
     return NextResponse.json(
       { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request, { params }: Params) {
+  try {
+    const { folderId } = await params;
+
+    const folder = await prisma.folder.findUnique({
+      where: { id: folderId },
+    });
+
+    if (!folder) {
+      return NextResponse.json({ error: "Folder not found" }, { status: 404 });
+    }
+
+    const formData = await request.formData();
+    const { files, filesMetadata } = parseFilesFormData(formData);
+
+    if (!files.length) {
+      return NextResponse.json({ error: "No files provided" }, { status: 400 });
+    }
+
+    const createdFiles = await saveFilesToFolder({
+      folderId,
+      files,
+      filesMetadata,
+    });
+
+    return NextResponse.json(
+      {
+        message: "Files uploaded successfully",
+        files: createdFiles,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "Failed to upload files" },
       { status: 500 }
     );
   }

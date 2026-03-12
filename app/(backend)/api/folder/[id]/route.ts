@@ -1,5 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import {
+  parseFilesFormData,
+  saveFilesToFolder,
+} from "@/lib/server/file-upload.service";
 
 export async function GET(
   _request: Request,
@@ -110,6 +114,46 @@ export async function PATCH(
     }
     return NextResponse.json(
       { message: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request, { params }: { params: Promise<{id: string}>}) {
+  try {
+    const { id } = await params;
+
+    const folder = await prisma.folder.findUnique({
+      where: { id: id },
+    });
+
+    if (!folder) {
+      return NextResponse.json({ error: "Folder not found" }, { status: 404 });
+    }
+
+    const formData = await request.formData();
+    const { files, filesMetadata } = parseFilesFormData(formData);
+    if (!files.length) {
+      return NextResponse.json({ error: "No files provided" }, { status: 400 });
+    }
+
+    const createdFiles = await saveFilesToFolder({
+      folderId: id,
+      files,
+      filesMetadata,
+    });
+
+    return NextResponse.json(
+      {
+        message: "Files uploaded successfully",
+        files: createdFiles,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "Failed to upload files" },
       { status: 500 }
     );
   }
