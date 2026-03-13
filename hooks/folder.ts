@@ -169,3 +169,25 @@ export const useUpdateFolder = (folderId: string) => {
     },
   });
 };
+
+export function useDeleteFolder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (folderId: string) => {
+      const res = await fetch(`/api/folder/${folderId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to delete folder");
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
+    },
+  });
+}

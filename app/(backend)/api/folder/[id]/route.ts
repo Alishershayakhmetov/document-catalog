@@ -42,11 +42,32 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    const deletedFolder = await prisma.folder.delete({
+    const folder = await prisma.folder.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { files: true },
+        },
+      },
+    });
+
+    if (!folder) {
+      return NextResponse.json({ message: "Folder not found" }, { status: 404 });
+    }
+
+    // 2. Guard clause: If files exist, block the deletion
+    if (folder._count.files > 0) {
+      return NextResponse.json(
+        { message: "Cannot delete folder: It still contains files." },
+        { status: 409 }
+      );
+    }
+
+    await prisma.folder.delete({
       where: { id },
     });
 
-    return NextResponse.json(deletedFolder);
+    return NextResponse.json({ message: "Folder deleted successfully" });
   } catch (error: any) {
     // record doesn't exist
     if (error.code === "P2025") {

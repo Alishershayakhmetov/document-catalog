@@ -11,11 +11,11 @@ import {
   FileText,
   CalendarDays,
 } from "lucide-react";
-import { useParams } from "next/navigation";
-import { useFolderById } from "@/hooks/folder";
+import { useParams, useRouter } from "next/navigation";
+import { useFolderById, useDeleteFolder } from "@/hooks/folder";
 import { useUpdateFolder } from "@/hooks/folder";
 import { formatDate } from "@/utils/dateUtils";
-import { useAddFiles, useUpdateFile } from "@/hooks/file";
+import { useAddFiles, useUpdateFile, useDeleteFiles } from "@/hooks/file";
 import EditFileModal from "@/features/folder/editFile";
 import FileCard from "@/features/folder/fileCard";
 import FileUploadFields from "@/features/shared/fileUploadFields";
@@ -49,60 +49,63 @@ type SelectedFileItem = {
 export default function FolderDetailsPage() {
   const params = useParams();
   const folderId = params.folder_id as string;
+  const router = useRouter();
 
   const { data: folderData, isLoading, error } = useFolderById(folderId);
   const { mutate: updateFolder, isPending: isFolderUpdating } = useUpdateFolder(folderId);
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const { mutate: updateFile, isPending: isFileUpdating } = useUpdateFile();
   const { mutate: addFiles, isPending: isFilesAdding } = useAddFiles();
+  const { mutate: deleteFiles, isPending: isFilesDeleting } = useDeleteFiles();
+  const { mutate: deleteFolder, isPending: isFolderDeleting } = useDeleteFolder();
 
   const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [isDeleteFolderMode, setIsDeleteFolderMode] = useState(false);
   const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const [addForm, setAddForm] = useState<FileFormState>(emptyForm);
+  // const [addForm, setAddForm] = useState<FileFormState>(emptyForm);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
   const [editForm, setEditForm] = useState<FileFormState>(emptyForm);
 
   const files: FolderFile[] = folderData?.files ?? [];
   const selectedCount = useMemo(() => selectedFileIds.length, [selectedFileIds]);
 
-  // const submitUpdatedFiles = (updatedFiles: FolderFile[]) => {
-  //   if (!folderData) return;
+  const toggleDeleteMode = () => {
+    if (!folderData) return;
 
-  //   updateFolder({
-  //     ...folderData,
-  //     files: updatedFiles,
-  //   });
-  // };
+    if (!isDeleteMode) {
+      setIsDeleteMode(true);
+      return;
+    }
 
-  // const submitUpdatedFile = (updatedFile: FileData) => {
-  //   if (!folderData) return;
+    // if (selectedFileIds.length > 0) {
+    //   const updatedFiles = files.filter((file) => !selectedFileIds.includes(file.id));
+    //   deleteFiles({folderId, fileIds: updatedFiles.map(file => file.id)});
+    //   setSelectedFileIds([]);
+    // }
 
-  //   updateFolder({
-  //     ...folderData,
-  //     files: updatedFiles,
-  //   });
-  // };
+    if (selectedFileIds.length > 0) {
+      deleteFiles({ folderId, fileIds: selectedFileIds });
+      setSelectedFileIds([]);
+    }
 
-  // const toggleDeleteMode = () => {
-  //   if (!folderData) return;
+    setIsDeleteMode(false);
+  };
 
-  //   if (!isDeleteMode) {
-  //     setIsDeleteMode(true);
-  //     return;
-  //   }
+  const handleDeleteFolder = () => {
+    if (!folderData) return;
+    if (folderData.files.length !== 0) return;
 
-  //   if (selectedFileIds.length > 0) {
-  //     const updatedFiles = files.filter((file) => !selectedFileIds.includes(file.id));
-  //     submitUpdatedFiles(updatedFiles);
-  //     setSelectedFileIds([]);
-  //   }
-
-  //   setIsDeleteMode(false);
-  // };
+    deleteFolder(folderId, {
+      onSuccess: () => {
+        setIsDeleteFolderMode(false);
+        router.push("/");
+      },
+    });
+  };
 
   const cancelDeleteMode = () => {
     setIsDeleteMode(false);
@@ -116,9 +119,13 @@ export default function FolderDetailsPage() {
   };
 
   const openAddModal = () => {
-    setAddForm(emptyForm);
+    // setAddForm(emptyForm);
     setIsAddModalOpen(true);
   };
+
+  const openDeleteFolderModal = () => {
+    setIsDeleteFolderMode(true);
+  }
 
   const handleAddFile = (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -136,12 +143,10 @@ export default function FolderDetailsPage() {
       file = {...file, name: file.name.trim(), physicalLocation: file.physicalLocation.trim()}
     })
 
-    // submitUpdatedFiles([newFile, ...files]);
-
     console.log({folderId, fileData: selectedFiles})
     addFiles({folderId, fileData: selectedFiles})
     setIsAddModalOpen(false);
-    setAddForm(emptyForm);
+    // setAddForm(emptyForm);
   };
 
   const openEditModal = (file: FolderFile) => {
@@ -156,27 +161,6 @@ export default function FolderDetailsPage() {
     });
     setIsEditModalOpen(true);
   };
-
-  // const handleEditFile = (e: React.SubmitEvent) => {
-  //   e.preventDefault();
-  //   if (!folderData || !editingFileId) return;
-
-  //   const updatedFiles = files.map((file) =>
-  //     file.id === editingFileId
-  //       ? {
-  //           ...file,
-  //           systemName: editForm.systemName.trim(),
-  //           date: editForm.date,
-  //           physicalLocation: editForm.physicalLocation.trim(),
-  //         }
-  //       : file
-  //   );
-
-  //   submitUpdatedFiles(updatedFiles);
-  //   setEditingFileId(null);
-  //   setEditForm(emptyForm);
-  //   setIsEditModalOpen(false);
-  // };
 
   const closeEditModal = () => {
     setEditingFileId(null);
@@ -230,10 +214,6 @@ export default function FolderDetailsPage() {
     );
   };
 
-  const toggleDeleteMode = () => {
-    console.log("not implemented")
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
@@ -274,6 +254,15 @@ export default function FolderDetailsPage() {
                       ? `Delete Selected (${selectedCount})`
                       : "Finish Delete"
                     : "Delete Files"}
+                </button>
+
+                <button
+                  onClick={openDeleteFolderModal}
+                  disabled={!folderData || isFolderUpdating}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${"bg-red-600 text-white hover:bg-red-700"}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Folder
                 </button>
 
                 {isDeleteMode && (
@@ -331,7 +320,7 @@ export default function FolderDetailsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl ">
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Add File</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Add Files</h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
                 className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
@@ -375,8 +364,50 @@ export default function FolderDetailsPage() {
           editForm={editForm}
           setEditForm={setEditForm}
         />
-      
       )}
+
+      {isDeleteFolderMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl ">
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">Delete Folder</h3>
+              <button
+                onClick={() => setIsDeleteFolderMode(false)}
+                className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {folderData?.files.length !== 0 && (
+              <h3 className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800      font-semibold text-gray-900">You cannot delete folder if it has files</h3>
+            )}         
+
+            <h3 className="text-l font-semibold text-gray-900">Are you sure you want to delete folder?</h3>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={folderData?.files.length !== 0 || isFolderDeleting}
+                  onClick={handleDeleteFolder}
+                  className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isFolderDeleting ? "Deleting..." : "Delete Folder"}
+                </button>
+              </div>
+          </div>
+        </div>
+      )}
+
+
+
+
     </div>
   );
 }

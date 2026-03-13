@@ -42,31 +42,6 @@ export async function GET(
   });
 }
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
-
-  try {
-    const deletedFile = await prisma.file.delete({
-      where: { id },
-    });
-
-    return NextResponse.json(deletedFile);
-  } catch (error: any) {
-    // record doesn't exist
-    if (error.code === "P2025") {
-      return NextResponse.json({ message: "Not found" }, { status: 404 });
-    }
-    // generic server error
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
-
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

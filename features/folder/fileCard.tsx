@@ -10,6 +10,7 @@ import {
   Check,
   FileText,
   CalendarDays,
+	Download,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useFolderById } from "@/hooks/folder";
@@ -39,6 +40,9 @@ export default function FileCard({selectedFileIds, file, isDeleteMode, toggleFil
 	const isSelected = selectedFileIds.includes(file.id);
 
 	const handleDownload = async () => {
+		if (isDeleteMode) {
+			return;
+		}
     try {
       const response = await fetch(`/api/file/${file.id}`, {
         method: "GET",
@@ -77,7 +81,6 @@ export default function FileCard({selectedFileIds, file, isDeleteMode, toggleFil
 
 	return (
 		<div
-			onClick={handleDownload}
 			className={`grid grid-cols-1 gap-4 px-5 py-4 md:grid-cols-[2.2fr_1fr_2.4fr_auto] md:items-center ${
 				isDeleteMode && isSelected ? "bg-red-50" : "hover:bg-gray-50"
 			}`}
@@ -137,6 +140,15 @@ export default function FileCard({selectedFileIds, file, isDeleteMode, toggleFil
 					>
 						<Share2 className="h-4 w-4" />
 						Share
+					</button>
+
+					<button
+						onClick={() => handleDownload()}
+						disabled={isDeleteMode}
+						className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						<Download className="h-4 w-4" />
+						Download
 					</button>
 				</div>
 			</div>
