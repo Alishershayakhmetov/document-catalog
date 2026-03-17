@@ -22,23 +22,37 @@ export type FolderData = {
   }[]
 }
 
-const fetchFolders = async (): Promise<Folder[]> => {
-  const res = await fetch("/api/folder");
+export type FolderFilters = {
+  mallId: string | null;
+  catalogId: string | null;
+  subcatalogId: string | null;
+  documentationId: string | null;
+};
 
-  if (!res.ok) {
+async function fetchFolders(filters: FolderFilters) {
+  const query = new URLSearchParams();
+
+  if (filters.mallId) query.set("mallId", filters.mallId);
+  if (filters.catalogId) query.set("catalogId", filters.catalogId);
+  if (filters.subcatalogId) query.set("subcatalogId", filters.subcatalogId);
+  if (filters.documentationId) query.set("documentationId", filters.documentationId);
+
+  const response = await fetch(`/api/folder?${query.toString()}`);
+
+  if (!response.ok) {
     throw new Error("Failed to fetch folders");
   }
 
-  return res.json();
-};
+  const data = await response.json();
+  return data.folders;
+}
 
-export const useFolders = () => {
+export function useFolders(filters: FolderFilters) {
   return useQuery({
-    queryKey: ["folders"],
-    queryFn: fetchFolders,
-    staleTime:1000 * 60 * 5, // 5 min cache
+    queryKey: ["folders", filters],
+    queryFn: () => fetchFolders(filters),
   });
-};
+}
 
 const fetchFolderById = async (id: string): Promise<FolderData> => {
   const res = await fetch("/api/folder/" + id);
@@ -189,5 +203,35 @@ export function useDeleteFolder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["folders"] });
     },
+  });
+}
+
+type FolderFilter = {
+  mallId: string | null;
+  catalogId: string | null;
+  subcatalogId: string | null;
+  documentationId: string | null;
+};
+
+async function filterFolders(filters: FolderFilter) {
+  const response = await fetch("/api/folder/filter", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(filters),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.error || "Failed to filter folders");
+  }
+
+  return response.json();
+}
+
+export function useFilterFolders() {
+  return useMutation({
+    mutationFn: filterFolders,
   });
 }

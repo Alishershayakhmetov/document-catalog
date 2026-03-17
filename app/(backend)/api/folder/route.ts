@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
@@ -11,20 +11,130 @@ import {
 
 const UPLOAD_DIR = path.join(process.cwd(), "..", "uploads");
 
-export async function GET() {
-  const folders = await prisma.folder.findMany({
-    select: {
-      name: true,
-      id: true,
-      date: true,
-      _count: true
-    },
-    orderBy: {
-      updatedAt: "desc"
-    },
-  });
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
 
-  return NextResponse.json(folders);
+    const mallId = searchParams.get("mallId");
+    const catalogId = searchParams.get("catalogId");
+    const subcatalogId = searchParams.get("subcatalogId");
+    const documentationId = searchParams.get("documentationId");
+
+    const where = buildFolderFilter({
+      mallId,
+      catalogId,
+      subcatalogId,
+      documentationId,
+    });
+
+    const folders = await prisma.folder.findMany({
+      where,
+      select: {
+        name: true,
+        id: true,
+        date: true,
+        _count: true,
+        // files: true,
+        // mall: true,
+        // catalog: true,
+        // subcatalog: true,
+        // documentation: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    return NextResponse.json({ folders });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      { error: "Failed to fetch folders" },
+      { status: 500 }
+    );
+  }
+}
+
+function buildFolderFilter({
+  mallId,
+  catalogId,
+  subcatalogId,
+  documentationId,
+}: {
+  mallId: string | null;
+  catalogId: string | null;
+  subcatalogId: string | null;
+  documentationId: string | null;
+}) {
+  if (documentationId) {
+    return {
+      documentationId,
+    };
+  }
+
+  if (subcatalogId) {
+    return {
+      OR: [
+        { subcatalogId: subcatalogId },
+        {
+          documentation: {
+            subcatalogId,
+          },
+        },
+      ],
+    };
+  }
+
+  if (catalogId) {
+    return {
+      OR: [
+        { catalogId: catalogId },
+        {
+          subcatalog: {
+            catalogId,
+          },
+        },
+        {
+          documentation: {
+            subcatalog: {
+              catalogId,
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  if (mallId) {
+    return {
+      OR: [
+        { mallId },
+        {
+          catalog: {
+            mallId,
+          },
+        },
+        {
+          subcatalog: {
+            catalog: {
+              mallId,
+            },
+          },
+        },
+        {
+          documentation: {
+            subcatalog: {
+              catalog: {
+                mallId,
+              },
+            },
+          },
+        },
+      ],
+    };
+  }
+
+  return {};
 }
 
 export async function POST(request: Request) {
@@ -35,8 +145,8 @@ export async function POST(request: Request) {
     const folderDate = formData.get("folderDate") as string;
     const shoppingMall = formData.get("shoppingMall") as string | null;
     const documentation = formData.get("documentation") as string | null;
-    const catalogue = formData.get("catalogue") as string | null;
-    const subCatalogue = formData.get("subCatalogue") as string | null;
+    const catalog = formData.get("catalogue") as string | null;
+    const subCatalog = formData.get("subCatalogue") as string | null;
 
     if (!folderName || !folderDate) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -47,10 +157,10 @@ export async function POST(request: Request) {
     const folder = await createFolder({
       folderName,
       folderDate,
-      shoppingMall,
-      documentation,
-      catalogue,
-      subCatalogue,
+      shoppingMallId: shoppingMall,
+      documentationId: documentation,
+      catalogId: catalog,
+      subCatalogId: subCatalog,
     });
 
     const createdFiles = await saveFilesToFolder({
@@ -74,124 +184,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-// export async function POST(request: Request){
-
-//   const formData = await request.formData();
-
-//   const folderName =
-//     formData.get("folderName") as string;
-//   const folderDate =
-//     formData.get("folderDate") as string;
-//   const shoppingMall =
-//     formData.get("shoppingMall") as string;
-//   const documentation =
-//     formData.get("documentation") as string;
-//   const catalogue =
-//     formData.get("catalogue") as string;
-//   const subCatalogue =
-//     formData.get("subCatalogue") as string;
-//   const files =
-//     formData.getAll("files") as File[];
-//   const filesMetadataRaw =
-//     formData.get("filesMetadata") as string;
-
-//   if(!folderName || !folderDate){
-//     return NextResponse.json(
-//       {error:"Missing fields"},
-//       {status:400}
-//     );
-//   }
-
-//   let filesMetadata = [];
-
-//   if(filesMetadataRaw){
-//     filesMetadata =
-//       JSON.parse(filesMetadataRaw);
-//   }
-
-//   if(files.length !== filesMetadata.length){
-//     return NextResponse.json(
-//       {error:"Files metadata mismatch"},
-//       {status:400}
-//     );
-//   }
-
-//   // Create folder
-//   const folder = await prisma.folder.create({
-
-//     data:{
-//       name:folderName,
-//       date:new Date(folderDate),
-//       // TRC,
-//       // Documentation,
-//       // Catalogue,
-//       // Subcatalogue,
-//     }
-
-//   });
-
-//   // Create directory
-//   const folderDir = path.join(
-//     UPLOAD_DIR,
-//     folder.id
-//   );
-
-//   await fs.mkdir(
-//     folderDir,
-//     {recursive:true}
-//   );
-
-//   // Save files
-//   for(let i=0;i<files.length;i++){
-
-//     const file = files[i];
-
-//     const metadata =
-//       filesMetadata[i];
-
-//     const buffer = Buffer.from(
-//       await file.arrayBuffer()
-//     );
-
-//     const ext =
-//       path.extname(file.name);
-
-//     const storedName =
-//       crypto.randomUUID() +
-//       ext;
-
-//     const filePath =
-//       path.join(folderDir,storedName);
-
-//     await fs.writeFile(
-//       filePath,
-//       buffer
-//     );
-
-//     await prisma.file.create({
-
-//       data:{
-//         folderId:folder.id,
-//         originalFilename:
-//           file.name,
-//         storedFilename:
-//           storedName,
-//         filePath:
-//           filePath,
-//         mimeType:
-//           file.type,
-//         fileSize:
-//           file.size,
-//         systemName:
-//           file.name,
-//         physicalLocation:
-//           metadata.physicalLocation || null
-//       }
-//     });
-//   }
-//   return NextResponse.json(
-//     folder,
-//     {status:201}
-//   );
-// }

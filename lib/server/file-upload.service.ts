@@ -66,28 +66,28 @@ export async function saveFilesToFolder(params: {
 export async function createFolder(data: {
   folderName: string;
   folderDate: string;
-  shoppingMall?: string | null;
-  documentation?: string | null;
-  catalogue?: string | null;
-  subCatalogue?: string | null;
+  shoppingMallId?: string | null;
+  documentationId?: string | null;
+  catalogId?: string | null;
+  subCatalogId?: string | null;
 }) {
   const {
     folderName,
     folderDate,
-    shoppingMall,
-    documentation,
-    catalogue,
-    subCatalogue,
+    shoppingMallId,
+    documentationId,
+    catalogId,
+    subCatalogId,
   } = data;
 
   return prisma.folder.create({
     data: {
       name: folderName,
       date: new Date(folderDate),
-      // shoppingMall: shoppingMall || null,
-      // documentation: documentation || null,
-      // catalogue: catalogue || null,
-      // subCatalogue: subCatalogue || null,
+      mallId: shoppingMallId,
+      documentationId: documentationId,
+      catalogId: catalogId,
+      subcatalogId: subCatalogId,
     },
   });
 }

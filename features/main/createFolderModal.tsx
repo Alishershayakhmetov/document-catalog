@@ -7,10 +7,11 @@ import FileUploadFields from "@/features/shared/fileUploadFields";
 type SelectedFileItem = {
   file: File;
   physicalLocation: string;
+  name: string;
+  date: string;
 };
 
 type Props = {
-  isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
     folderName: string;
@@ -25,7 +26,6 @@ type Props = {
 };
 
 export default function CreateFolderModal({
-  isOpen,
   onClose,
   onSubmit,
   isPending = false,
@@ -53,7 +53,7 @@ export default function CreateFolderModal({
     onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
 
     onSubmit({
@@ -68,8 +68,6 @@ export default function CreateFolderModal({
 
     handleClose();
   };
-
-  if (!isOpen) return null;
 
   return (
     <div

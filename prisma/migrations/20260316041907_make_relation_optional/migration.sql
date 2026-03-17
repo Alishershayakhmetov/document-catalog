@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Folder" ALTER COLUMN "catalogueId" DROP NOT NULL,
+ALTER COLUMN "documentationId" DROP NOT NULL,
+ALTER COLUMN "subcatalogueId" DROP NOT NULL,
+ALTER COLUMN "trcId" DROP NOT NULL;

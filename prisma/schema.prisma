@@ -29,11 +29,40 @@ model Users {
   updatedAt DateTime @updatedAt
 }
 
-model TRC {
+model Mall {
   id String @id @default(cuid())
   name String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  catalogs Catalog[]
+  folders Folder[]
+}
+
+model Catalog {
+  id String @id @default(cuid())
+  name String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mallId      String
+  mall        Mall            @relation(fields: [mallId], references: [id], onDelete: Restrict)
+
+  subcatalogs Subcatalog[]
+  folders Folder[]
+}
+
+model Subcatalog {
+  id String @id @default(cuid())
+  name String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  catalogId String
+  catalog   Catalog      @relation(fields: [catalogId], references: [id], onDelete: Restrict)
+
+  documentations Documentation[]
+  folders Folder[]
 }
 
 model Documentation {
@@ -41,20 +70,11 @@ model Documentation {
   name String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
-model Catalogue {
-  id String @id @default(cuid())
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+  subcatalogId String
+  subcatalog   Subcatalog  @relation(fields: [subcatalogId], references: [id], onDelete: Restrict)
 
-model Subcatalogue {
-  id String @id @default(cuid())
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  folders Folder[]
 }
 
 model Folder {
@@ -63,6 +83,17 @@ model Folder {
   date DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  mallId String?
+  documentationId String?
+  catalogId String?
+  subcatalogId String?
+
+  mall Mall? @relation(fields: [mallId], references: [id], onDelete: Restrict)
+  documentation   Documentation? @relation(fields: [documentationId], references: [id], onDelete: Restrict)
+  catalog   Catalog? @relation(fields: [catalogId], references: [id], onDelete: Restrict)
+  subcatalog   Subcatalog? @relation(fields: [subcatalogId], references: [id], onDelete: Restrict)
+
   files        File[]
 }
 
@@ -74,10 +105,8 @@ model File {
   fileSize         Int
   uploadedAt       DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   folderId     String
   folderIdRelation       Folder     @relation(fields: [folderId], references: [id])
-
   date DateTime @default(now())
   systemName String
   physicalLocation String?

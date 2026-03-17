@@ -5,20 +5,40 @@ import { Plus, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { useFolders, useCreateFolder } from "@/hooks/folder";
 import FolderList from "@/features/main/render_folder_list";
 import CreateFolderModal from "@/features/main/createFolderModal";
+import FilterFolderModal from "@/features/main/filterFolderModal";
 
 type SelectedFileItem = {
   file: File;
   physicalLocation: string;
 };
 
+type FilterFolderProps = { 
+  mallId: string | null, 
+  categoryId: string | null, 
+  subcategoryId: string | null, 
+  documentationId: string | null 
+}
+
 export default function FoldersPage() {
-  const { data: folders = [], isLoading, error } = useFolders();
+  const [folderFilters, setFolderFilters] = useState<{
+    mallId: string | null;
+    catalogId: string | null;
+    subcatalogId: string | null;
+    documentationId: string | null;
+  }>({
+    mallId: null,
+    catalogId: null,
+    subcatalogId: null,
+    documentationId: null,
+  });
+
+  const { data: folders = [], isLoading, error } = useFolders(folderFilters);
   const createFolderMutation = useCreateFolder();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddFolderModalOpen, setIsAddFolderModalOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
+  const openModal = () => setIsAddFolderModalOpen(true);
 
   const handleCreateFolder = (data: {
     folderName: string;
@@ -30,6 +50,15 @@ export default function FoldersPage() {
     files: SelectedFileItem[];
   }) => {
     createFolderMutation.mutate(data);
+  };
+
+  const handleFilterFolders = (filters: {
+    mallId: string | null;
+    catalogId: string | null;
+    subcatalogId: string | null;
+    documentationId: string | null;
+  }) => {
+    setFolderFilters(filters);
   };
 
   return (
@@ -51,7 +80,7 @@ export default function FoldersPage() {
               <button
                 type="button"
                 className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                disabled
+                onClick={() => setIsFilterOpen(true)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filter
@@ -60,7 +89,6 @@ export default function FoldersPage() {
               <button
                 type="button"
                 className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                disabled
               >
                 <ArrowUpDown className="h-4 w-4" />
                 Sort
@@ -112,12 +140,20 @@ export default function FoldersPage() {
         </div>
       </div>
 
+      {isAddFolderModalOpen && 
       <CreateFolderModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
+        onClose={() => setIsAddFolderModalOpen(false)}
         onSubmit={handleCreateFolder}
         isPending={createFolderMutation.isPending}
-      />
+      />}      
+
+      {isFilterOpen && 
+      <FilterFolderModal
+        onClose={() => setIsFilterOpen(false)}
+        handleFilterFolders={handleFilterFolders}
+        isPending={isLoading}
+      />}
+      
     </div>
   );
 }
