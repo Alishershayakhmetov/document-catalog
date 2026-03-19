@@ -1,8 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import path from "path";
-
-const UPLOAD_DIR = path.join(process.cwd(), "..", "uploads");
+import { CategoryType } from "@/shared/types/global";
 
 export async function GET() {
   const mall = await prisma.mall.findMany({
@@ -108,8 +106,6 @@ export async function POST(request: Request) {
     );
   }
 }
-
-type CategoryType = "mall" | "documentation" | "catalog" | "subcatalog";
 
 function getCategoryModel(categoryType: CategoryType) {
   switch (categoryType) {

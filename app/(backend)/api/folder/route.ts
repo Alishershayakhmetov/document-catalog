@@ -1,15 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
-import crypto from "crypto";
 import {
   createFolder,
   parseFilesFormData,
   saveFilesToFolder,
 } from "@/lib/server/file-upload.service";
-
-const UPLOAD_DIR = path.join(process.cwd(), "..", "uploads");
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,11 +36,6 @@ export async function GET(request: NextRequest) {
               files: true
             }
           },
-          // files: true,
-          // mall: true,
-          // catalog: true,
-          // subcatalog: true,
-          // documentation: true,
         },
         orderBy: {
           updatedAt: "desc",

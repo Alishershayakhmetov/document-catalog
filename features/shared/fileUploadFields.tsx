@@ -1,26 +1,12 @@
 "use client";
 
-type SelectedFileItem = {
-  file: File;
-  physicalLocation: string;
-  name: string;
-  date: string;
-};
+import { SelectedFileItem } from "@/shared/types/global";
+import { formatDate } from "@/utils/dateUtils";
 
 type Props = {
   selectedFiles: SelectedFileItem[];
   setSelectedFiles: React.Dispatch<React.SetStateAction<SelectedFileItem[]>>;
 };
-
-function formatLocalDate(timestamp: number) {
-  const date = new Date(timestamp);
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
 
 export default function FileUploadFields({
   selectedFiles,
@@ -34,7 +20,8 @@ export default function FileUploadFields({
         file,
         physicalLocation: "",
 				name: file.name,
-				date: formatLocalDate(file.lastModified)
+        description: "",
+				date: formatDate(file.lastModified)
       }))
     );
   };
@@ -47,10 +34,10 @@ export default function FileUploadFields({
     );
   };
 
-	const handleNameChange = (index: number, value: string) => {
+	const handleDescriptionChange = (index: number, value: string) => {
 		setSelectedFiles((prev) => 
 			prev.map((item, i) => 
-				i === index ? { ...item, name: value} : item
+				i === index ? { ...item, description: value} : item
 			)
 		)
 	}
@@ -85,7 +72,33 @@ export default function FileUploadFields({
           <div className="space-y-3">
             {selectedFiles.map((item, index) => (
               <div key={`${item.file.name}-${index}`} className="space-y-2">
-                <p className="truncate text-sm text-gray-600">{item.file.name}</p>
+                <div>
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Имя Файла
+									</label>
+									<input
+										type="text"
+										value={item.file.name}
+                    disabled
+										className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                  />
+                </div>
+
+                <div>
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Описания
+									</label>
+									<input
+										type="text"
+										value={item.description || "" }
+										onChange={(e) =>
+											handleDescriptionChange(index, e.target.value)
+										}
+										placeholder="Введите описание"
+										className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                    style={{ backgroundColor: '#ffffff' }}
+                  />
+                </div>
 
 								<div>
 									<label className="mb-2 block text-sm font-medium text-gray-700">
@@ -93,30 +106,14 @@ export default function FileUploadFields({
 									</label>
 									<input
 										type="text"
-										placeholder="Physical location"
+										placeholder="Введите местонахождения"
 										value={item.physicalLocation}
 										onChange={(e) =>
 											handlePhysicalLocationChange(index, e.target.value)
 										}
-										className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400"
+										className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400"
 									/>
 								</div>
-
-                <div>
-									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Имя
-									</label>
-									<input
-										type="text"
-										value={item.name}
-										onChange={(e) =>
-											handleNameChange(index, e.target.value)
-										}
-										placeholder="Enter system name"
-										className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400"
-										required
-									/>
-                </div>
 
 								<div>
 									<label className="mb-2 block text-sm font-medium text-gray-700">
@@ -128,10 +125,13 @@ export default function FileUploadFields({
 										onChange={(e) =>
 											handleDateChange(index, e.target.value)
 										}
-										placeholder="Enter system name"
 										className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400"
 										required
 									/>
+                </div>
+
+                <div className="py-4">
+                  <hr className="border-t border-gray-900" />
                 </div>
               </div>
             ))}

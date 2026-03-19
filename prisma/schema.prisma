@@ -111,5 +111,6 @@ model File {
   folderIdRelation       Folder     @relation(fields: [folderId], references: [id])
   date DateTime @default(now())
   systemName String
+  description String?
   physicalLocation String?
 }

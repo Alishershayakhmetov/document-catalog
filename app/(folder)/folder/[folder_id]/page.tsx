@@ -4,11 +4,7 @@ import { useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
-  Pencil,
-  Share2,
   X,
-  Check,
-  FileText,
   CalendarDays,
   Edit,
   LogOut,
@@ -21,31 +17,13 @@ import { useAddFiles, useUpdateFile, useDeleteFiles } from "@/hooks/file";
 import EditFileModal from "@/features/folder/editFile";
 import FileCard from "@/features/folder/fileCard";
 import FileUploadFields from "@/features/shared/fileUploadFields";
+import { FileCardInfo, FileCardInfoState, SelectedFileItem } from "@/shared/types/global";
 
-type FolderFile = {
-  id: string;
-  systemName: string;
-  date: string;
-  physicalLocation: string;
-};
-
-type FileFormState = {
-  systemName: string;
-  date: string;
-  physicalLocation: string;
-};
-
-const emptyForm: FileFormState = {
+const emptyForm: FileCardInfoState = {
   systemName: "",
   date: "",
   physicalLocation: "",
-};
-
-type SelectedFileItem = {
-  file: File;
-  physicalLocation: string;
-  name: string;
-  date: string;
+  description: "",
 };
 
 export default function FolderDetailsPage() {
@@ -69,11 +47,10 @@ export default function FolderDetailsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [ isEditFolderModalOpen, setIsEditFolderModalOpen ] = useState(false);
 
-  // const [addForm, setAddForm] = useState<FileFormState>(emptyForm);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
-  const [editForm, setEditForm] = useState<FileFormState>(emptyForm);
+  const [editForm, setEditForm] = useState<FileCardInfoState>(emptyForm);
 
-  const files: FolderFile[] = folderData?.files ?? [];
+  const files: FileCardInfo[] = folderData?.files ?? [];
   const selectedCount = useMemo(() => selectedFileIds.length, [selectedFileIds]);
 
   const toggleDeleteMode = () => {
@@ -83,12 +60,6 @@ export default function FolderDetailsPage() {
       setIsDeleteMode(true);
       return;
     }
-
-    // if (selectedFileIds.length > 0) {
-    //   const updatedFiles = files.filter((file) => !selectedFileIds.includes(file.id));
-    //   deleteFiles({folderId, fileIds: updatedFiles.map(file => file.id)});
-    //   setSelectedFileIds([]);
-    // }
 
     if (selectedFileIds.length > 0) {
       deleteFiles({ folderId, fileIds: selectedFileIds });
@@ -121,15 +92,6 @@ export default function FolderDetailsPage() {
     );
   };
 
-  const openAddModal = () => {
-    // setAddForm(emptyForm);
-    setIsAddModalOpen(true);
-  };
-
-  const openDeleteFolderModal = () => {
-    setIsDeleteFolderMode(true);
-  }
-
   const handleAddFile = (e: React.SubmitEvent) => {
     e.preventDefault();
     if (!folderData) return;
@@ -145,14 +107,11 @@ export default function FolderDetailsPage() {
 
       file = {...file, name: file.name.trim(), physicalLocation: file.physicalLocation.trim()}
     })
-
-    console.log({folderId, fileData: selectedFiles})
     addFiles({folderId, fileData: selectedFiles})
     setIsAddModalOpen(false);
-    // setAddForm(emptyForm);
   };
 
-  const openEditModal = (file: FolderFile) => {
+  const openEditModal = (file: FileCardInfo) => {
 
     console.log(file)
 
@@ -161,6 +120,7 @@ export default function FolderDetailsPage() {
       systemName: file.systemName,
       date: file.date,
       physicalLocation: file.physicalLocation,
+      description: file.description
     });
     setIsEditModalOpen(true);
   };
@@ -177,24 +137,22 @@ export default function FolderDetailsPage() {
     if (!editingFileId) return;
 
     if (
-      !editForm.systemName.trim() ||
+      !(editForm.systemName && editForm.systemName.trim()) ||
       !editForm.date ||
-      !editForm.physicalLocation.trim()
+      !(editForm.physicalLocation && editForm.physicalLocation.trim())
     ) {
       return;
     }
-
-    console.log("editingFileId:", editingFileId);
-    console.log("editForm:", editForm);
 
     updateFile(
       {
         folderId: folderId,
         fileData: {
-          fileId: editingFileId,
+          id: editingFileId,
           systemName: editForm.systemName.trim(),
           date: editForm.date,
           physicalLocation: editForm.physicalLocation.trim(),
+          description: editForm.description,
         }
       },
       {
@@ -211,11 +169,8 @@ export default function FolderDetailsPage() {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
-
     const name = formData.get("name") as string;
     const date = formData.get("date") as string;
-
-    console.log(name, date)
 
     updateFolder({
       id: folderId,
@@ -228,7 +183,7 @@ export default function FolderDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 md:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto space-y-6">
         <section className="rounded-3xl bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 md:flex-row md:items-start md:justify-between">
             <div>
@@ -251,7 +206,7 @@ export default function FolderDetailsPage() {
 
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
-                  onClick={openAddModal}
+                  onClick={() => setIsAddModalOpen(true)}
                   disabled={!folderData || isFolderUpdating}
                   className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -292,7 +247,7 @@ export default function FolderDetailsPage() {
                 )}
 
                 <button
-                  onClick={openDeleteFolderModal}
+                  onClick={() => setIsDeleteFolderMode(true)}
                   disabled={!folderData || isFolderUpdating}
                   className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${"bg-red-600 text-white hover:bg-red-700"}`}
                 >

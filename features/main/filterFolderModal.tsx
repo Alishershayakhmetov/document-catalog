@@ -7,8 +7,7 @@ import { useAddCategory, useCatalogTree } from "@/hooks/catalog";
 import DeleteCategoryModal from "./deleteCategoryModal";
 import { Option, CatalogOption, SubcatalogOption, DocumentationOption} from "./types";
 import EditCategoryModal from "./editCategoryModal";
-
-type CategoryType = "mall" | "catalog" | "subcatalog" | "documentation";
+import { CategoryType } from "@/shared/types/global";
 
 type Props = {
   onClose: () => void;
@@ -37,6 +36,10 @@ export default function FilterFolderModal({
 
   const { data, isLoading, isError } = useCatalogTree();
   const { mutate: addCategory, isPending: isCategoryAdding } = useAddCategory();
+  
+  const isCatalogDisabled = !selectedMall;
+  const isSubcatalogDisabled = !selectedCatalog;
+  const isDocumentationDisabled = !selectedSubcatalog;
 
   const malls = data?.mall ?? [];
   const allCatalogs = data?.catalog ?? [];
@@ -99,10 +102,6 @@ export default function FilterFolderModal({
     setSelectedDocumentation(documentation);
   };
 
-  const isCatalogDisabled = !selectedMall;
-  const isSubcatalogDisabled = !selectedCatalog;
-  const isDocumentationDisabled = !selectedSubcatalog;
-
   const parentCategoryId = useMemo(() => {
     switch (categorySelected) {
       case "catalog":
@@ -111,20 +110,6 @@ export default function FilterFolderModal({
         return selectedCatalog?.id ?? null;
       case "documentation":
         return selectedSubcatalog?.id ?? null;
-      case "mall":
-      default:
-        return null;
-    }
-  }, [categorySelected, selectedMall, selectedCatalog, selectedSubcatalog]);
-
-  const parentCategoryName = useMemo(() => {
-    switch (categorySelected) {
-      case "catalog":
-        return selectedMall?.name ?? null;
-      case "subcatalog":
-        return selectedCatalog?.name ?? null;
-      case "documentation":
-        return selectedSubcatalog?.name ?? null;
       case "mall":
       default:
         return null;
@@ -398,7 +383,6 @@ export default function FilterFolderModal({
           <CreateCategoryModal
             categoryType={categorySelected}
             parentCategoryId={parentCategoryId}
-            // parentCategoryName={parentCategoryName}
             onClose={() => setCategorySelected(null)}
             isPending={isCategoryAdding}
           />
@@ -408,7 +392,6 @@ export default function FilterFolderModal({
           <DeleteCategoryModal 
             categoryType={categoryToDelete}
             categoryList={data[categoryToDelete]}
-            // parentCategoryName={parentCategoryName}
             onClose={() => setCategoryToDelete(null)}
             isPending={isCategoryAdding}
           />
@@ -418,7 +401,6 @@ export default function FilterFolderModal({
           <EditCategoryModal
             categoryType={categoryToEdit}
             categoryList={data[categoryToEdit]}
-            // parentCategoryName={parentCategoryName}
             onClose={() => setCategoryToEdit(null)}
             isPending={isCategoryAdding}
           />

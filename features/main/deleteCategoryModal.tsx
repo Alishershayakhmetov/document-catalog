@@ -6,9 +6,10 @@ import FileUploadFields from "@/features/shared/fileUploadFields";
 import { useAddCategory, useDeleteCategory } from "@/hooks/catalog";
 import { Option, CatalogOption, SubcatalogOption, DocumentationOption} from "./types";
 import { catalogNames } from "./constant";
+import { CategoryType } from "@/shared/types/global";
 
 type Props = {
-  categoryType: "mall" | "documentation" | "catalog" | "subcatalog",
+  categoryType: CategoryType,
   categoryList: Option[] | CatalogOption[] | SubcatalogOption[] | DocumentationOption[] | undefined;
   onClose: () => void;
   isPending?: boolean;
@@ -29,12 +30,8 @@ export default function DeleteCategoryModal({
     setSelectedDeleteCategory(selected);
   };
 
-  const resetForm = () => {
-    setSelectedDeleteCategory(null)
-  };
-
   const handleClose = () => {
-    resetForm();
+    setSelectedDeleteCategory(null);
     onClose();
   };
 

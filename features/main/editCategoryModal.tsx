@@ -1,14 +1,14 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
-import { useMemo, useState } from "react";
-import FileUploadFields from "@/features/shared/fileUploadFields";
-import { useAddCategory, useDeleteCategory, useEditCategory } from "@/hooks/catalog";
+import { X } from "lucide-react";
+import { useState } from "react";
+import { useEditCategory } from "@/hooks/catalog";
 import { Option, CatalogOption, SubcatalogOption, DocumentationOption} from "./types";
 import { catalogNames } from "./constant";
+import { CategoryType } from "@/shared/types/global";
 
 type Props = {
-  categoryType: "mall" | "documentation" | "catalog" | "subcatalog",
+  categoryType: CategoryType,
   categoryList: Option[] | CatalogOption[] | SubcatalogOption[] | DocumentationOption[] | undefined;
   onClose: () => void;
   isPending?: boolean;
@@ -30,12 +30,8 @@ export default function EditCategoryModal({
     setSelectedEditCategory(selected);
   };
 
-  const resetForm = () => {
-    setSelectedEditCategory(null)
-  };
-
   const handleClose = () => {
-    resetForm();
+    setSelectedEditCategory(null);
     onClose();
   };
 

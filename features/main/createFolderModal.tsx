@@ -5,13 +5,7 @@ import { useMemo, useState } from "react";
 import FileUploadFields from "@/features/shared/fileUploadFields";
 import { Option, CatalogOption, SubcatalogOption, DocumentationOption} from "./types";
 import { useCatalogTree } from "@/hooks/catalog";
-
-type SelectedFileItem = {
-  file: File;
-  physicalLocation: string;
-  name: string;
-  date: string;
-};
+import { SelectedFileItem } from "@/shared/types/global";
 
 type Props = {
   onClose: () => void;
@@ -21,7 +15,7 @@ type Props = {
     shoppingMall: string | null;
     documentation: string | null;
     catalog: string | null;
-    subCatalog: string | null;
+    subcatalog: string | null;
     files: SelectedFileItem[];
   }) => void;
   isPending?: boolean;
@@ -94,7 +88,7 @@ export default function CreateFolderModal({
       folderDate,
       shoppingMall: selectedMall?.id || null,
       catalog: selectedCatalog?.id || null,
-      subCatalog: selectedSubcatalog?.id || null,
+      subcatalog: selectedSubcatalog?.id || null,
       documentation: selectedDocumentation?.id || null,
       files: selectedFiles,
     });

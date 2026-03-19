@@ -1,13 +1,13 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useState } from "react";
-import FileUploadFields from "@/features/shared/fileUploadFields";
 import { useAddCategory } from "@/hooks/catalog";
 import { catalogNames } from "./constant";
+import { CategoryType } from "@/shared/types/global";
 
 type Props = {
-  categoryType: "mall" | "documentation" | "catalog" | "subcatalog",
+  categoryType: CategoryType,
   parentCategoryId: string | null;
   onClose: () => void;
   isPending?: boolean;
@@ -19,15 +19,11 @@ export default function CreateCategoryModal({
   onClose,
   isPending = false,
 }: Props) {
-  const [newCatalogInput, setNewCatalogInput] = useState("");
+  const [newCategoryInput, setNewCategoryInput] = useState("");
   const { mutate: addCategory, isPending: isCategoryAdding } = useAddCategory();
 
-  const resetForm = () => {
-    setNewCatalogInput("")
-  };
-
   const handleClose = () => {
-    resetForm();
+    setNewCategoryInput("")
     onClose();
   };
 
@@ -36,7 +32,7 @@ export default function CreateCategoryModal({
     addCategory({
       categoryType: categoryType,
       parentCategoryId: parentCategoryId,
-      createCategoryName: newCatalogInput,
+      createCategoryName: newCategoryInput,
     })
     onClose();
   }
@@ -74,8 +70,8 @@ export default function CreateCategoryModal({
 								<input
 									type="text"
 									id="newCatalogInput"
-									value={newCatalogInput}
-									onChange={(e) => setNewCatalogInput(e.target.value)}
+									value={newCategoryInput}
+									onChange={(e) => setNewCategoryInput(e.target.value)}
 									placeholder={`Введите ${catalogNames[categoryType]}`}
 									className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
 									required

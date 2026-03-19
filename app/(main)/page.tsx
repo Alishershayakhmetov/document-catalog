@@ -13,13 +13,6 @@ type SelectedFileItem = {
   physicalLocation: string;
 };
 
-type FilterFolderProps = { 
-  mallId: string | null, 
-  categoryId: string | null, 
-  subcategoryId: string | null, 
-  documentationId: string | null 
-}
-
 const debounce_time = 300;
 
 export default function FoldersPage() {
@@ -37,7 +30,6 @@ export default function FoldersPage() {
 
   const [ searchInput, setSearchInput ] = useState("");
   const debouncedSearch = useDebounce(searchInput, debounce_time);
-  // const params = {...folderFilters, search: debouncedSearch};
   const queryParams = useMemo(() => ({
     ...folderFilters,
     search: debouncedSearch.trim(),
@@ -60,7 +52,7 @@ export default function FoldersPage() {
     shoppingMall: string | null;
     documentation: string | null;
     catalog: string | null;
-    subCatalog: string | null;
+    subcatalog: string | null;
     files: SelectedFileItem[];
   }) => {
     createFolderMutation.mutate(data);
@@ -77,7 +69,7 @@ export default function FoldersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 md:px-8">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto">
         <div className="rounded-2xl bg-white p-6 shadow-sm">
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-3">
@@ -89,7 +81,6 @@ export default function FoldersPage() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400 text-gray-700"
-                  // disabled
                 />
               </div>
 

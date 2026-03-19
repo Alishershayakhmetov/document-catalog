@@ -1,20 +1,14 @@
-import { useUpdateFile } from "@/hooks/file";
+import { FileCardInfoState } from "@/shared/types/global";
 import { formatDate } from "@/utils/dateUtils";
 import { X } from "lucide-react";
 import { SubmitEvent, useState } from "react";
-
-type FileFormState = {
-  systemName: string;
-  date: string;
-  physicalLocation: string;
-};
 
 type Props = {
   closeEditModal: () => void;
   handleEditFile: (e: SubmitEvent<Element>) => void;
   isFolderUpdating: boolean;
-  editForm: FileFormState;
-  setEditForm: React.Dispatch<React.SetStateAction<FileFormState>>;
+  editForm: FileCardInfoState;
+  setEditForm: React.Dispatch<React.SetStateAction<FileCardInfoState>>;
 };
 
 export default function EditFileModal({
@@ -40,13 +34,13 @@ export default function EditFileModal({
 				<form onSubmit={handleEditFile} className="space-y-4">
 					<div>
 						<label className="mb-2 block text-sm font-medium text-gray-700">
-							Имя
+							Описания
 						</label>
 						<input
 							type="text"
-							value={editForm.systemName}
+							value={editForm.description || ''} 
 							onChange={(e) =>
-								setEditForm((prev) => ({ ...prev, systemName: e.target.value }))
+								setEditForm((prev) => ({ ...prev, description: e.target.value }))
 							}
 							className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 text-gray-900 placeholder:text-gray-400 bg-white"
 							required
@@ -74,7 +68,7 @@ export default function EditFileModal({
 						</label>
 						<input
 							type="text"
-							value={editForm.physicalLocation}
+							value={editForm.physicalLocation || ''}
 							onChange={(e) =>
 								setEditForm((prev) => ({
 									...prev,

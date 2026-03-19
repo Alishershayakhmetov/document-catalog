@@ -1,22 +1,20 @@
-/**
- * Converts ISO string (2025-01-15T...) to "2025-01-15"
- */
-// export const formatDate = (isoString: string | undefined) => {
-//   if (!isoString) return '';
+export const formatDate = (dateToFormat: string | undefined | null | number) => {
+  if (!dateToFormat) {
+    return "";
+  }
 
-// 	const formattedDate = new Intl.DateTimeFormat('en-CA', {
-// 		year: 'numeric',
-// 		month: '2-digit',
-// 		day: '2-digit',
-// 		timeZone: 'UTC' // keep the date from shifting
-// 		}).format(new Date(isoString))
+  if (typeof dateToFormat === "number") {
+    const date = new Date(dateToFormat);
 
-// 	return formattedDate
-// }
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-export const formatDate = (date: string | undefined) => {
-	const dateForInput = date
-  ? new Date(date).toISOString().split('T')[0] 
+    return `${year}-${month}-${day}`;
+  }
+  
+  const dateForInput = dateToFormat
+  ? new Date(dateToFormat).toISOString().split('T')[0] 
   : '';
 
 	return dateForInput;

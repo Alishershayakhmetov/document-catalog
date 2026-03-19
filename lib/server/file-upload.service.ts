@@ -9,6 +9,7 @@ export type UploadedFileMetadata = {
   physicalLocation?: string | null;
   systemName?: string | null;
 	date?: string | null;
+  description? : string | null;
 };
 
 export async function ensureFolderDirectory(folderId: string) {
@@ -54,6 +55,7 @@ export async function saveFilesToFolder(params: {
 				date: metadata.date ? new Date(metadata.date) : new Date(),
         systemName: metadata.systemName || file.name,
         physicalLocation: metadata.physicalLocation || null,
+        description: metadata.description 
       },
     });
 

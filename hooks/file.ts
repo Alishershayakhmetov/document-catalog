@@ -1,18 +1,5 @@
+import { FileCardInfo, SelectedFileItem } from "@/shared/types/global";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-
-type FilePayload = {
-  fileId: string;
-  systemName: string;
-  date: string;
-  physicalLocation: string;
-};
-
-type AddFilePayLoad = {
-	file: File;
-  name: string;
-  date: string;
-  physicalLocation: string;
-}
 
 export function useUpdateFile() {
   const queryClient = useQueryClient();
@@ -20,9 +7,9 @@ export function useUpdateFile() {
   return useMutation({
     mutationFn: async ({ folderId, fileData }: {
 				folderId: string;
-				fileData: FilePayload; 
+				fileData: FileCardInfo; 
 			}) => {
-      const res = await fetch(`/api/file/${fileData.fileId}`, {
+      const res = await fetch(`/api/file/${fileData.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -38,7 +25,7 @@ export function useUpdateFile() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["folderById", variables.folderId] });
-      queryClient.invalidateQueries({ queryKey: ["fileById", variables.fileData.fileId] });
+      queryClient.invalidateQueries({ queryKey: ["fileById", variables.fileData.id] });
     },
   });
 }
@@ -49,10 +36,8 @@ export function useAddFiles() {
   return useMutation({
     mutationFn: async ({ folderId, fileData }: {
 				folderId: string;
-				fileData: AddFilePayLoad[]; 
+				fileData: SelectedFileItem[]; 
 			}) => {
-			console.log({ folderId, fileData })
-
 			const formData = new FormData();
 			fileData.forEach((item) => {
 				formData.append("files", item.file);
@@ -64,6 +49,7 @@ export function useAddFiles() {
 						physicalLocation: item.physicalLocation,
 						systemName: item.name,
 						date: item.date,
+            description: item.description
 					}))
 				)
 			);

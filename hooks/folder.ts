@@ -1,23 +1,12 @@
+import { FileCardInfo } from "@/shared/types/global";
 import { useQuery } from "@tanstack/react-query";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-
-export type Folder = {
-  id: string;
-  name: string;
-  date: string;
-  fileCount: number
-};
 
 export type FolderData = {
   id: string;
   name: string;
   date: string;
-  files: {
-    id: string,
-    date: string,
-    systemName: string,
-    physicalLocation: string
-  }[]
+  files: FileCardInfo[]
 }
 
 export type UseFoldersParams = {
@@ -26,6 +15,26 @@ export type UseFoldersParams = {
   subcatalogId: string | null;
   documentationId: string | null;
   search: string
+};
+
+type CreateFolderDTO = {
+  folderName: string;
+  folderDate: string;
+  shoppingMall: string | null;
+  catalog: string | null;
+  subcatalog: string | null;
+  documentation: string | null;
+  files: {
+    file: File;
+    physicalLocation: string;
+  }[];
+};
+
+type FolderFilter = {
+  mallId: string | null;
+  catalogId: string | null;
+  subcatalogId: string | null;
+  documentationId: string | null;
 };
 
 async function fetchFolders(filters: UseFoldersParams) {
@@ -45,43 +54,12 @@ async function fetchFolders(filters: UseFoldersParams) {
 
   const data = await response.json();
 
-  // console.log(data)
-  // console.log("qwerty 2", data.folders ?? [])
-  // return data.folders ?? [];
   if (!data) {
     console.error("Failed to fetch folders: empty or invalid response");
     return []
   }
   return data.folders;
 }
-
-// export function useFolders(filters: FolderFilters) {
-//   return useQuery({
-//     queryKey: ["folders", filters],
-//     queryFn: () => fetchFolders(filters),
-//   });
-// }
-
-// export const useFolders = (params: UseFoldersParams) => {
-//   return useQuery({
-//     queryKey: ["folders", params], // ✅ includes search automatically
-//     queryFn: async () => {
-//       const query = new URLSearchParams();
-
-//       if (params.mallId) query.append("mallId", params.mallId);
-//       if (params.catalogId) query.append("catalogId", params.catalogId);
-//       if (params.subcatalogId) query.append("subcatalogId", params.subcatalogId);
-//       if (params.documentationId) query.append("documentationId", params.documentationId);
-//       if (params.search) query.append("search", params.search);
-
-//       const res = await fetch(`/api/folders?${query.toString()}`);
-//       const data = await res.json();
-
-//       return data.folders;
-//     },
-//     enabled: !params.search || params.search.length >= 2, // optional optimization
-//   });
-// };
 
 export const useFolders = (params: UseFoldersParams) => {
   return useQuery({
@@ -90,7 +68,6 @@ export const useFolders = (params: UseFoldersParams) => {
     enabled: !params.search || params.search.length >= 2, // optional optimization
   });
 };
-
 
 const fetchFolderById = async (id: string): Promise<FolderData> => {
   const res = await fetch("/api/folder/" + id);
@@ -110,21 +87,6 @@ export const useFolderById = (id: string) => {
   });
 };
 
-type UploadFile = {
-  file: File;
-  physicalLocation: string;
-};
-
-type CreateFolderDTO = {
-  folderName: string;
-  folderDate: string;
-  shoppingMall: string | null;
-  catalog: string | null;
-  subCatalog: string | null;
-  documentation: string | null;
-  files: UploadFile[];
-};
-
 const createFolder = async (data: CreateFolderDTO) => {
 
   const formData = new FormData();
@@ -134,7 +96,7 @@ const createFolder = async (data: CreateFolderDTO) => {
   formData.append("shoppingMallId", data.shoppingMall ?? "");
   formData.append("documentationId", data.documentation ?? "");
   formData.append("catalogId", data.catalog ?? "");
-  formData.append("subcatalogId", data.subCatalog ?? "");
+  formData.append("subcatalogId", data.subcatalog ?? "");
 
   // files metadata
   const metadata = data.files.map((f,index)=>({
@@ -243,13 +205,6 @@ export function useDeleteFolder() {
     },
   });
 }
-
-type FolderFilter = {
-  mallId: string | null;
-  catalogId: string | null;
-  subcatalogId: string | null;
-  documentationId: string | null;
-};
 
 async function filterFolders(filters: FolderFilter) {
   const response = await fetch("/api/folder/filter", {

@@ -22,7 +22,8 @@ export async function GET(
           id: true,
           date: true,
           systemName: true,
-          physicalLocation: true
+          physicalLocation: true,
+          description: true
         }
       }
     }

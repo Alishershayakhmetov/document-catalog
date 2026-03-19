@@ -1,17 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import {
   parseFilesFormData,
   saveFilesToFolder,
 } from "@/lib/server/file-upload.service";
 import path from "path";
 import fs from "fs/promises";
-
-type Params = {
-  params: Promise<{
-    folderId: string;
-  }>;
-};
 
 export async function GET(
   _request: Request,
@@ -49,9 +43,10 @@ export async function PATCH(
   const { id } = await params;
 
   let body: Partial<{
-    date: string;
-    systemName: string;
-    physicalLocation: string;
+    date: string | null | undefined;
+    systemName: string | null | undefined;
+    physicalLocation: string | null | undefined;
+    desciption: string | null | undefined;
   }>;
 
   try {
@@ -64,7 +59,7 @@ export async function PATCH(
   }
 
   // allowed keys
-  const allowedKeys = ["date", "systemName", "physicalLocation"];
+  const allowedKeys = ["date", "systemName", "physicalLocation", "description"];
   const updateData: Record<string, any> = {};
   for (const key of allowedKeys) {
     if (body[key as keyof typeof body] !== undefined) {
@@ -97,7 +92,10 @@ export async function PATCH(
   }
 }
 
-export async function POST(request: Request, { params }: Params) {
+export async function POST(
+  request: Request, 
+  { params }: { params : Promise<{folderId: string}> }
+) {
   try {
     const { folderId } = await params;
 
