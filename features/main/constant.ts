@@ -1,6 +1,6 @@
 export const catalogNames = {
-  "mall": "Shopping Mall",
-  "documentation": "Documentation",
-  "catalog": "Catalog",
-  "subcatalog": "Sub Catalog",
+  "mall": "ТРЦ",
+  "documentation": "Документация",
+  "catalog": "Каталог",
+  "subcatalog": "Суб-Каталог",
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import FileUploadFields from "@/features/shared/fileUploadFields";
+import { Option, CatalogOption, SubcatalogOption, DocumentationOption} from "./types";
+import { useCatalogTree } from "@/hooks/catalog";
 
 type SelectedFileItem = {
   file: File;
@@ -16,10 +18,10 @@ type Props = {
   onSubmit: (data: {
     folderName: string;
     folderDate: string;
-    shoppingMall: string;
-    documentation: string;
-    catalogue: string;
-    subCatalogue: string;
+    shoppingMall: string | null;
+    documentation: string | null;
+    catalog: string | null;
+    subCatalog: string | null;
     files: SelectedFileItem[];
   }) => void;
   isPending?: boolean;
@@ -32,20 +34,51 @@ export default function CreateFolderModal({
 }: Props) {
   const [folderName, setFolderName] = useState("");
   const [folderDate, setFolderDate] = useState("");
-  const [shoppingMall, setShoppingMall] = useState("");
-  const [documentation, setDocumentation] = useState("");
-  const [catalogue, setCatalogue] = useState("");
-  const [subCatalogue, setSubCatalogue] = useState("");
+
+  // const [shoppingMall, setShoppingMall] = useState("");
+  // const [documentation, setDocumentation] = useState("");
+  // const [catalogue, setCatalogue] = useState("");
+  // const [subCatalogue, setSubCatalogue] = useState("");
+  
+  const [selectedMall, setSelectedMall] = useState<Option | null>(null);
+  const [selectedCatalog, setSelectedCatalog] = useState<CatalogOption | null>(null);
+  const [selectedSubcatalog, setSelectedSubcatalog] = useState<SubcatalogOption | null>(null);
+  const [selectedDocumentation, setSelectedDocumentation] = useState<DocumentationOption | null>(null);
+
+  const { data, isLoading, isError } = useCatalogTree();
+
+  const allMalls = data?.mall ?? [];
+  const allCatalogs = data?.catalog ?? [];
+  const allSubcatalogs = data?.subcatalog ?? [];
+  const allDocumentations = data?.documentation ?? [];
+
+  const catalogs = useMemo(() => {
+    if (!selectedMall) return [];
+    return allCatalogs.filter((item) => item.mallId === selectedMall.id);
+  }, [allCatalogs, selectedMall]);
+
+  const subcatalogs = useMemo(() => {
+    if (!selectedCatalog) return [];
+    return allSubcatalogs.filter((item) => item.catalogId === selectedCatalog.id);
+  }, [allSubcatalogs, selectedCatalog]);
+
+  const documentations = useMemo(() => {
+    if (!selectedSubcatalog) return [];
+    return allDocumentations.filter(
+      (item) => item.subcatalogId === selectedSubcatalog.id
+    );
+  }, [allDocumentations, selectedSubcatalog]);
+
   const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
 
   const resetForm = () => {
     setFolderName("");
     setFolderDate("");
-    setShoppingMall("");
-    setDocumentation("");
-    setCatalogue("");
-    setSubCatalogue("");
     setSelectedFiles([]);
+    setSelectedMall(null);
+    setSelectedCatalog(null);
+    setSelectedSubcatalog(null);
+    setSelectedDocumentation(null);
   };
 
   const handleClose = () => {
@@ -59,14 +92,41 @@ export default function CreateFolderModal({
     onSubmit({
       folderName,
       folderDate,
-      shoppingMall,
-      documentation,
-      catalogue,
-      subCatalogue,
+      shoppingMall: selectedMall?.id || null,
+      catalog: selectedCatalog?.id || null,
+      subCatalog: selectedSubcatalog?.id || null,
+      documentation: selectedDocumentation?.id || null,
       files: selectedFiles,
     });
 
     handleClose();
+  };
+
+  const handleMallChange = (mallId: string) => {
+    const mall = allMalls.find((item) => item.id === mallId) ?? null;
+    setSelectedMall(mall);
+    setSelectedCatalog(null);
+    setSelectedSubcatalog(null);
+    setSelectedDocumentation(null);
+  };
+
+  const handleCatalogChange = (catalogId: string) => {
+    const catalog = catalogs.find((item) => item.id === catalogId) ?? null;
+    setSelectedCatalog(catalog);
+    setSelectedSubcatalog(null);
+    setSelectedDocumentation(null);
+  };
+
+  const handleSubcatalogChange = (subcatalogId: string) => {
+    const subcatalog = subcatalogs.find((item) => item.id === subcatalogId) ?? null;
+    setSelectedSubcatalog(subcatalog);
+    setSelectedDocumentation(null);
+  };
+
+  const handleDocumentationChange = (documentationId: string) => {
+    const documentation =
+      documentations.find((item) => item.id === documentationId) ?? null;
+    setSelectedDocumentation(documentation);
   };
 
   return (
@@ -80,7 +140,7 @@ export default function CreateFolderModal({
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">
-            Create New Folder
+            Создать Новую Папку
           </h2>
 
           <button
@@ -96,7 +156,7 @@ export default function CreateFolderModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Folder Name
+                Имя Папки
               </label>
               <input
                 type="text"
@@ -110,7 +170,7 @@ export default function CreateFolderModal({
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Folder Date
+                Дата папки
               </label>
               <input
                 type="date"
@@ -123,58 +183,76 @@ export default function CreateFolderModal({
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Shopping Mall
+                ТРЦ
               </label>
-              <input
-                type="text"
-                value={shoppingMall}
-                onChange={(e) => setShoppingMall(e.target.value)}
-                placeholder="Enter Shopping Mall"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
-                required
-              />
+              <select
+                value={selectedMall?.id ?? ""}
+                onChange={(e) => handleMallChange(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
+              >
+                <option value="">Выберите ТРЦ</option>
+                {allMalls.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Documentation
+                Каталог
               </label>
-              <input
-                type="text"
-                value={documentation}
-                onChange={(e) => setDocumentation(e.target.value)}
-                placeholder="Enter Documentation"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
-                required
-              />
+              <select
+                value={selectedCatalog?.id ?? ""}
+                onChange={(e) => handleCatalogChange(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
+              >
+                <option value="">Выберите Каталог</option>
+                {catalogs.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Catalogue
+                Суб-Каталог
               </label>
-              <input
-                type="text"
-                value={catalogue}
-                onChange={(e) => setCatalogue(e.target.value)}
-                placeholder="Enter Catalogue"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
-                required
-              />
+
+              <select
+                value={selectedSubcatalog?.id ?? ""}
+                onChange={(e) => handleSubcatalogChange(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
+              >
+                <option value="">Выберите Суб-Каталог</option>
+                {subcatalogs.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Subcatalogue
+                Документация
               </label>
-              <input
-                type="text"
-                value={subCatalogue}
-                onChange={(e) => setSubCatalogue(e.target.value)}
-                placeholder="Enter Subcatalogue"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
-                required
-              />
+              <select
+                value={selectedDocumentation?.id ?? ""}
+                onChange={(e) => handleDocumentationChange(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
+              >
+                <option value="">Выберите Документация</option>
+                {documentations.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+
             </div>
 
             <FileUploadFields
@@ -188,7 +266,7 @@ export default function CreateFolderModal({
                 onClick={handleClose}
                 className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
-                Cancel
+                Отмена
               </button>
 
               <button
@@ -196,7 +274,7 @@ export default function CreateFolderModal({
                 disabled={isPending}
                 className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isPending ? "Creating..." : "Create"}
+                {isPending ? "Создание..." : "Создать"}
               </button>
             </div>
           </form>

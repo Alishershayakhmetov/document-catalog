@@ -95,6 +95,8 @@ model Folder {
   subcatalog   Subcatalog? @relation(fields: [subcatalogId], references: [id], onDelete: Restrict)
 
   files        File[]
+
+  search_vector Unsupported("tsvector")?
 }
 
 model File {

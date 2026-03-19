@@ -43,7 +43,7 @@ export default function FolderList({ folders }: {folders: Folder[]}) {
           <div className="md:col-span-2">
             <div className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-700">
               <Paperclip className="h-4 w-4" />
-              {folder._count.files} file{folder._count.files !== 1 ? "s" : ""}
+              {folder.fileCount} Файл
             </div>
           </div>
         </div>

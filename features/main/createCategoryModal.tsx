@@ -52,7 +52,7 @@ export default function CreateCategoryModal({
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">
-            Create new {catalogNames[categoryType]}
+            Создать Новый {catalogNames[categoryType]}
           </h2>
 
           <button
@@ -76,7 +76,7 @@ export default function CreateCategoryModal({
 									id="newCatalogInput"
 									value={newCatalogInput}
 									onChange={(e) => setNewCatalogInput(e.target.value)}
-									placeholder={`Enter ${catalogNames[categoryType]}`}
+									placeholder={`Введите ${catalogNames[categoryType]}`}
 									className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
 									required
 								/>
@@ -89,7 +89,7 @@ export default function CreateCategoryModal({
                 onClick={handleClose}
                 className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
-                Cancel
+                Отмена
               </button>
 
               <button
@@ -97,7 +97,7 @@ export default function CreateCategoryModal({
                 disabled={isPending}
                 className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isPending ? "Creating..." : "Create"}
+                {isPending ? "Создание..." : "Создать"}
               </button>
             </div>
           </form>

@@ -66,7 +66,7 @@ export default function FileUploadFields({
   return (
     <div>
       <label className="mb-2 block text-sm font-medium text-gray-700">
-        Upload Files
+        Загрузить файлы
       </label>
 
       <input
@@ -79,7 +79,7 @@ export default function FileUploadFields({
       {selectedFiles.length > 0 && (
         <div className="mt-4 rounded-xl bg-gray-50 p-4">
           <p className="mb-3 text-sm font-medium text-gray-700">
-            Selected files:
+            Выбранные Файлы:
           </p>
 
           <div className="space-y-3">
@@ -89,7 +89,7 @@ export default function FileUploadFields({
 
 								<div>
 									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Physical Location
+										Местонахождения
 									</label>
 									<input
 										type="text"
@@ -104,7 +104,7 @@ export default function FileUploadFields({
 
                 <div>
 									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Name
+										Имя
 									</label>
 									<input
 										type="text"
@@ -120,7 +120,7 @@ export default function FileUploadFields({
 
 								<div>
 									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Date
+										Дата
 									</label>
 									<input
 										type="date"

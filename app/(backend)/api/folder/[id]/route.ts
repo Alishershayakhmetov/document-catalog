@@ -89,8 +89,7 @@ export async function PATCH(
 
   let body: Partial<{
     date: string;
-    systemName: string;
-    physicalLocation: string;
+    name: string;
   }>;
 
   try {
@@ -103,7 +102,7 @@ export async function PATCH(
   }
 
   // allowed keys
-  const allowedKeys = ["date", "systemName", "physicalLocation"];
+  const allowedKeys = ["date", "name"];
   const updateData: Record<string, any> = {};
   for (const key of allowedKeys) {
     if (body[key as keyof typeof body] !== undefined) {
@@ -119,20 +118,23 @@ export async function PATCH(
   }
 
   try {
-
     console.log(updateData)
     console.log(id)
 
-    const updatedFile = await prisma.file.update({
+    const updatedFolder = await prisma.folder.update({
       where: { id },
-      data: updateData,
-    });
+      data: {
+        date: new Date(updateData.date),
+        name: updateData.name
+      }
+    })
 
-    return NextResponse.json(updatedFile);
+    return NextResponse.json(updatedFolder);
   } catch (error: any) {
     if (error.code === "P2025") {
       return NextResponse.json({ message: "Not found" }, { status: 404 });
     }
+    console.log(error)
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

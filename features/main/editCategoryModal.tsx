@@ -9,7 +9,7 @@ import { catalogNames } from "./constant";
 
 type Props = {
   categoryType: "mall" | "documentation" | "catalog" | "subcatalog",
-  categoryList: Option[] | CatalogOption[] | SubcatalogOption[] | DocumentationOption[];
+  categoryList: Option[] | CatalogOption[] | SubcatalogOption[] | DocumentationOption[] | undefined;
   onClose: () => void;
   isPending?: boolean;
 };
@@ -25,6 +25,7 @@ export default function EditCategoryModal({
 	const { mutate: editCategory, isPending: isCategoryEditing } = useEditCategory();
 
   const handleEditCategory = (categoryId: string) => {
+    if (!categoryList) return;
     const selected = categoryList.find((item) => item.id === categoryId) ?? null;
     setSelectedEditCategory(selected);
   };
@@ -59,7 +60,7 @@ export default function EditCategoryModal({
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">
-            Edit {catalogNames[categoryType]}
+            Изменить {catalogNames[categoryType]}
           </h2>
 
           <button
@@ -86,10 +87,10 @@ export default function EditCategoryModal({
 									required
 								>
 								<option value="" disabled>
-									Select {catalogNames[categoryType]}
+									Выберите {catalogNames[categoryType]}
 								</option>
 
-								{categoryList.map((item) => (
+								{categoryList && categoryList.map((item) => (
 									<option key={item.id} value={item.id}>
 										{item.name}
 									</option>
@@ -108,7 +109,7 @@ export default function EditCategoryModal({
                 onClick={handleClose}
                 className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
-                Cancel
+                Отмена
               </button>
 
               <button
@@ -116,7 +117,7 @@ export default function EditCategoryModal({
                 disabled={isPending}
                 className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isPending ? "Deleting..." : "Delete"}
+                {isPending ? "Изменение..." : "Изменить"}
               </button>
             </div>
           </form>

@@ -32,11 +32,10 @@ type Props = {
 	isDeleteMode: boolean,
 	toggleFileSelection: (id: string) => void,
 	openEditModal: (file: FolderFile) => void,
-	handleShare: (file: FolderFile) => Promise<void>,
 	isFolderUpdating: boolean,
 }
 
-export default function FileCard({selectedFileIds, file, isDeleteMode, toggleFileSelection, openEditModal, handleShare, isFolderUpdating} : Props) {
+export default function FileCard({selectedFileIds, file, isDeleteMode, toggleFileSelection, openEditModal, isFolderUpdating} : Props) {
 	const isSelected = selectedFileIds.includes(file.id);
 
 	const handleDownload = async () => {
@@ -130,16 +129,7 @@ export default function FileCard({selectedFileIds, file, isDeleteMode, toggleFil
 						className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<Pencil className="h-4 w-4" />
-						Edit
-					</button>
-
-					<button
-						onClick={() => handleShare(file)}
-						disabled={isDeleteMode}
-						className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						<Share2 className="h-4 w-4" />
-						Share
+						Изменить
 					</button>
 
 					<button
@@ -148,7 +138,7 @@ export default function FileCard({selectedFileIds, file, isDeleteMode, toggleFil
 						className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
 					>
 						<Download className="h-4 w-4" />
-						Download
+						Скачать
 					</button>
 				</div>
 			</div>

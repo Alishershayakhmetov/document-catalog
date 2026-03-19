@@ -28,7 +28,7 @@ export default function EditFileModal({
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
 			<div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
 				<div className="mb-5 flex items-center justify-between">
-					<h3 className="text-xl font-semibold text-gray-900">Edit file</h3>
+					<h3 className="text-xl font-semibold text-gray-900">Изменить Файл</h3>
 					<button
 						onClick={closeEditModal}
 						className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
@@ -40,7 +40,7 @@ export default function EditFileModal({
 				<form onSubmit={handleEditFile} className="space-y-4">
 					<div>
 						<label className="mb-2 block text-sm font-medium text-gray-700">
-							System name
+							Имя
 						</label>
 						<input
 							type="text"
@@ -55,7 +55,7 @@ export default function EditFileModal({
 
 					<div>
 						<label className="mb-2 block text-sm font-medium text-gray-700">
-							File date
+							Дата Файла
 						</label>
 						<input
 							type="date"
@@ -70,7 +70,7 @@ export default function EditFileModal({
 
 					<div>
 						<label className="mb-2 block text-sm font-medium text-gray-700">
-							Physical location
+							Местонахождения
 						</label>
 						<input
 							type="text"
@@ -92,14 +92,14 @@ export default function EditFileModal({
 							onClick={closeEditModal}
 							className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
 						>
-							Cancel
+							отменить
 						</button>
 						<button
 							type="submit"
 							disabled={isFolderUpdating}
 							className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
 						>
-							Save Changes
+							Сохранить
 						</button>
 					</div>
 				</form>

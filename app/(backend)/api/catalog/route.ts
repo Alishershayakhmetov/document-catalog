@@ -27,7 +27,7 @@ export async function GET() {
     },
   });
 
-  const subCatalog = await prisma.subcatalog.findMany({
+  const subcatalog = await prisma.subcatalog.findMany({
     select: {
       name: true,
       id: true,
@@ -49,7 +49,7 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({mall, catalog, subCatalog, documentation});
+  return NextResponse.json({mall, catalog, subcatalog, documentation});
 }
 
 export async function POST(request: Request) {
@@ -72,13 +72,13 @@ export async function POST(request: Request) {
         });
         break;
 
-      case "category":
+      case "catalog":
         createdCategory = await prisma.catalog.create({
           data: { name: createCategoryName, mallId: parentCategoryId },
         });
         break;
 
-      case "subcategory":
+      case "subcatalog":
         createdCategory = await prisma.subcatalog.create({
           data: { name: createCategoryName, catalogId: parentCategoryId },
         });

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { useFolders, useCreateFolder } from "@/hooks/folder";
 import FolderList from "@/features/main/render_folder_list";
 import CreateFolderModal from "@/features/main/createFolderModal";
 import FilterFolderModal from "@/features/main/filterFolderModal";
+import { useDebounce } from "@/hooks/debounce";
 
 type SelectedFileItem = {
   file: File;
@@ -18,6 +19,8 @@ type FilterFolderProps = {
   subcategoryId: string | null, 
   documentationId: string | null 
 }
+
+const debounce_time = 300;
 
 export default function FoldersPage() {
   const [folderFilters, setFolderFilters] = useState<{
@@ -32,7 +35,18 @@ export default function FoldersPage() {
     documentationId: null,
   });
 
-  const { data: folders = [], isLoading, error } = useFolders(folderFilters);
+  const [ searchInput, setSearchInput ] = useState("");
+  const debouncedSearch = useDebounce(searchInput, debounce_time);
+  // const params = {...folderFilters, search: debouncedSearch};
+  const queryParams = useMemo(() => ({
+    ...folderFilters,
+    search: debouncedSearch.trim(),
+  }), [folderFilters, debouncedSearch]);
+
+  const isParamEmpty = Object.values(queryParams).every(value => value === null || value === '');
+
+  const { data: folders = [], isLoading, error } = useFolders(queryParams);
+  const isTyping = searchInput !== debouncedSearch;
   const createFolderMutation = useCreateFolder();
 
   const [isAddFolderModalOpen, setIsAddFolderModalOpen] = useState(false);
@@ -43,10 +57,10 @@ export default function FoldersPage() {
   const handleCreateFolder = (data: {
     folderName: string;
     folderDate: string;
-    shoppingMall: string;
-    documentation: string;
-    catalogue: string;
-    subCatalogue: string;
+    shoppingMall: string | null;
+    documentation: string | null;
+    catalog: string | null;
+    subCatalog: string | null;
     files: SelectedFileItem[];
   }) => {
     createFolderMutation.mutate(data);
@@ -71,9 +85,11 @@ export default function FoldersPage() {
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search folders..."
-                  className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400"
-                  disabled
+                  placeholder="Поиск Папок..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400 text-gray-700"
+                  // disabled
                 />
               </div>
 
@@ -83,7 +99,7 @@ export default function FoldersPage() {
                 onClick={() => setIsFilterOpen(true)}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                Filter
+                Фильтр
               </button>
 
               <button
@@ -91,7 +107,7 @@ export default function FoldersPage() {
                 className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
                 <ArrowUpDown className="h-4 w-4" />
-                Sort
+                Сортировка
               </button>
             </div>
 
@@ -100,40 +116,45 @@ export default function FoldersPage() {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90"
             >
               <Plus className="h-5 w-5" />
-              New Folder
+              Новая папка
             </button>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-gray-200">
             <div className="hidden grid-cols-12 gap-4 border-b border-gray-200 bg-gray-50 px-5 py-3 text-sm font-semibold text-gray-600 md:grid">
-              <div className="col-span-8">Folder Name</div>
-              <div className="col-span-2">Date</div>
-              <div className="col-span-2">Files</div>
+              <div className="col-span-8">Имя Папки</div>
+              <div className="col-span-2">Дата</div>
+              <div className="col-span-2">Файлы</div>
             </div>
 
-            {isLoading ? (
+            {isLoading && !isTyping ? (
               <div className="p-10 text-center text-gray-500">
-                Loading folders...
+                Загрузка Папок...
               </div>
             ) : error ? (
               <div className="p-10 text-center text-red-500">
-                Failed to load folders
+                не удалось загрузить папки
               </div>
             ) : folders.length > 0 ? (
               <FolderList folders={folders} />
             ) : (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <p className="text-lg font-semibold text-gray-900">No folders yet</p>
-                <p className="mt-2 text-sm text-gray-500">
-                  Create your first folder to start building the catalog.
-                </p>
-                <button
-                  onClick={openModal}
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90"
-                >
-                  <Plus className="h-5 w-5" />
-                  Create Folder
-                </button>
+                <p className="text-lg font-semibold text-gray-900">Пока нет папок {!isParamEmpty && "с данными параметрами"}</p>
+                {isParamEmpty && (
+                  <div>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Создайте свою первую папку
+                    </p>
+                    <button
+                      onClick={openModal}
+                      className="mt-5 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90"
+                    >
+                      <Plus className="h-5 w-5" />
+                      Создать Папку
+                    </button>
+                  </div>
+                )            
+                }
               </div>
             )}
           </div>

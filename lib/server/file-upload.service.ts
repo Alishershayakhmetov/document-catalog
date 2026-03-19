@@ -71,7 +71,7 @@ export async function createFolder(data: {
   catalogId?: string | null;
   subCatalogId?: string | null;
 }) {
-  const {
+  let {
     folderName,
     folderDate,
     shoppingMallId,
@@ -80,14 +80,28 @@ export async function createFolder(data: {
     subCatalogId,
   } = data;
 
+  console.log({
+    name: folderName,
+    date: new Date(folderDate),
+    mallId: catalogId ? null : shoppingMallId,
+    catalogId: subCatalogId ? null : catalogId,
+    subcatalogId: documentationId ? null : subCatalogId,
+    documentationId: documentationId,
+  })
+
+  shoppingMallId = shoppingMallId || null;
+  catalogId = catalogId || null;
+  subCatalogId = subCatalogId || null;
+  documentationId = documentationId || null;
+
   return prisma.folder.create({
     data: {
       name: folderName,
       date: new Date(folderDate),
-      mallId: shoppingMallId,
+      mallId: catalogId ? null : shoppingMallId,
+      catalogId: subCatalogId ? null : catalogId,
+      subcatalogId: documentationId ? null : subCatalogId,
       documentationId: documentationId,
-      catalogId: catalogId,
-      subcatalogId: subCatalogId,
     },
   });
 }

@@ -186,7 +186,7 @@ export default function FilterFolderModal({
           <form onSubmit={(e: React.SubmitEvent) => FilterFolders(e)} className="space-y-4">
             <div>
               <label htmlFor="mall" className="mb-2 block text-sm font-medium text-gray-700">
-                Mall
+                ТРЦ
               </label>
 
               <div className="flex gap-4">
@@ -196,7 +196,7 @@ export default function FilterFolderModal({
                   onChange={(e) => handleMallChange(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400"
                 >
-                  <option value="">Select mall</option>
+                  <option value="">Выбрать ТРЦ</option>
                   {malls.map((mall) => (
                     <option key={mall.id} value={mall.id}>
                       {mall.name}
@@ -232,7 +232,7 @@ export default function FilterFolderModal({
 
             <div>
               <label htmlFor="catalog" className="mb-2 block text-sm font-medium text-gray-700">
-                Catalog
+                Каталог
               </label>
 
               <div className="flex gap-4">
@@ -243,7 +243,7 @@ export default function FilterFolderModal({
                   disabled={isCatalogDisabled}
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                 >
-                  <option value="">Select catalog</option>
+                  <option value="">Выбрать Каталог</option>
                   {catalogs.map((catalog) => (
                     <option key={catalog.id} value={catalog.id}>
                       {catalog.name}
@@ -280,7 +280,7 @@ export default function FilterFolderModal({
 
             <div>
               <label htmlFor="subcatalog" className="mb-2 block text-sm font-medium text-gray-700">
-                Subcatalog
+                Суб-Каталог
               </label>
 
               <div className="flex gap-4">
@@ -291,7 +291,7 @@ export default function FilterFolderModal({
                   disabled={isSubcatalogDisabled}
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                 >
-                  <option value="">Select subcatalog</option>
+                  <option value="">Выбрать Суб-каталог</option>
                   {subcatalogs.map((subcatalog) => (
                     <option key={subcatalog.id} value={subcatalog.id}>
                       {subcatalog.name}
@@ -328,7 +328,7 @@ export default function FilterFolderModal({
 
             <div>
               <label htmlFor="documentation" className="mb-2 block text-sm font-medium text-gray-700">
-                Documentation
+                Документация
               </label>
 
               <div className="flex gap-4">
@@ -339,7 +339,7 @@ export default function FilterFolderModal({
                   disabled={isDocumentationDisabled}
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                 >
-                  <option value="">Select documentation</option>
+                  <option value="">Выбрать Документация</option>
                   {documentations.map((documentation) => (
                     <option key={documentation.id} value={documentation.id}>
                       {documentation.name}
@@ -380,7 +380,7 @@ export default function FilterFolderModal({
                 onClick={handleClose}
                 className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
               >
-                Cancel
+                Отмена
               </button>
 
               <button
@@ -388,7 +388,7 @@ export default function FilterFolderModal({
                 disabled={isPending}
                 className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isPending ? "Filtering..." : "Filter"}
+                {isPending ? "Фильтрация..." : "Фильтровать"}
               </button>
             </div>
           </form>

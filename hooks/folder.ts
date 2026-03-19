@@ -5,9 +5,7 @@ export type Folder = {
   id: string;
   name: string;
   date: string;
-  _count: {
-    files: number
-  }
+  fileCount: number
 };
 
 export type FolderData = {
@@ -22,20 +20,22 @@ export type FolderData = {
   }[]
 }
 
-export type FolderFilters = {
+export type UseFoldersParams = {
   mallId: string | null;
   catalogId: string | null;
   subcatalogId: string | null;
   documentationId: string | null;
+  search: string
 };
 
-async function fetchFolders(filters: FolderFilters) {
+async function fetchFolders(filters: UseFoldersParams) {
   const query = new URLSearchParams();
 
   if (filters.mallId) query.set("mallId", filters.mallId);
   if (filters.catalogId) query.set("catalogId", filters.catalogId);
   if (filters.subcatalogId) query.set("subcatalogId", filters.subcatalogId);
   if (filters.documentationId) query.set("documentationId", filters.documentationId);
+  if (filters.search) query.set("search", filters.search)
 
   const response = await fetch(`/api/folder?${query.toString()}`);
 
@@ -44,15 +44,53 @@ async function fetchFolders(filters: FolderFilters) {
   }
 
   const data = await response.json();
+
+  // console.log(data)
+  // console.log("qwerty 2", data.folders ?? [])
+  // return data.folders ?? [];
+  if (!data) {
+    console.error("Failed to fetch folders: empty or invalid response");
+    return []
+  }
   return data.folders;
 }
 
-export function useFolders(filters: FolderFilters) {
+// export function useFolders(filters: FolderFilters) {
+//   return useQuery({
+//     queryKey: ["folders", filters],
+//     queryFn: () => fetchFolders(filters),
+//   });
+// }
+
+// export const useFolders = (params: UseFoldersParams) => {
+//   return useQuery({
+//     queryKey: ["folders", params], // ✅ includes search automatically
+//     queryFn: async () => {
+//       const query = new URLSearchParams();
+
+//       if (params.mallId) query.append("mallId", params.mallId);
+//       if (params.catalogId) query.append("catalogId", params.catalogId);
+//       if (params.subcatalogId) query.append("subcatalogId", params.subcatalogId);
+//       if (params.documentationId) query.append("documentationId", params.documentationId);
+//       if (params.search) query.append("search", params.search);
+
+//       const res = await fetch(`/api/folders?${query.toString()}`);
+//       const data = await res.json();
+
+//       return data.folders;
+//     },
+//     enabled: !params.search || params.search.length >= 2, // optional optimization
+//   });
+// };
+
+export const useFolders = (params: UseFoldersParams) => {
   return useQuery({
-    queryKey: ["folders", filters],
-    queryFn: () => fetchFolders(filters),
+    queryKey: ["folders", params],
+    queryFn: () => fetchFolders(params),
+    enabled: !params.search || params.search.length >= 2, // optional optimization
   });
-}
+};
+
 
 const fetchFolderById = async (id: string): Promise<FolderData> => {
   const res = await fetch("/api/folder/" + id);
@@ -80,10 +118,10 @@ type UploadFile = {
 type CreateFolderDTO = {
   folderName: string;
   folderDate: string;
-  shoppingMall: string;
-  documentation: string;
-  catalogue: string;
-  subCatalogue: string;
+  shoppingMall: string | null;
+  catalog: string | null;
+  subCatalog: string | null;
+  documentation: string | null;
   files: UploadFile[];
 };
 
@@ -93,10 +131,10 @@ const createFolder = async (data: CreateFolderDTO) => {
 
   formData.append("folderName", data.folderName);
   formData.append("folderDate", data.folderDate);
-  formData.append("shoppingMall", data.shoppingMall);
-  formData.append("documentation", data.documentation);
-  formData.append("catalogue", data.catalogue);
-  formData.append("subCatalogue", data.subCatalogue);
+  formData.append("shoppingMallId", data.shoppingMall ?? "");
+  formData.append("documentationId", data.documentation ?? "");
+  formData.append("catalogId", data.catalog ?? "");
+  formData.append("subcatalogId", data.subCatalog ?? "");
 
   // files metadata
   const metadata = data.files.map((f,index)=>({
@@ -141,13 +179,13 @@ export const useCreateFolder = () => {
   });
 };
 
-export const useUpdateFolder = (folderId: string) => {
+export const useUpdateFolder = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     // 1. The actual backend call
-    mutationFn: async (updatedFields: Partial<FolderData>) => {
-      const res = await fetch(`/api/folder/${folderId}`, {
+    mutationFn: async (updatedFields: {id: string, name: string, date: string}) => {
+      const res = await fetch(`/api/folder/${updatedFields.id}`, {
         method: 'PATCH',
         body: JSON.stringify(updatedFields),
       });
@@ -158,13 +196,13 @@ export const useUpdateFolder = (folderId: string) => {
     // 2. The "Instant UI" logic
     onMutate: async (updatedFields) => {
       // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-      await queryClient.cancelQueries({ queryKey: ['folderById', folderId] });
+      await queryClient.cancelQueries({ queryKey: ['folderById', updatedFields.id] });
 
       // Snapshot the previous value
-      const previousFolder = queryClient.getQueryData<FolderData>(['folderById', folderId]);
+      const previousFolder = queryClient.getQueryData<FolderData>(['folderById', updatedFields.id]);
 
       // Optimistically update to the new value
-      queryClient.setQueryData(['folderById', folderId], (old: FolderData | undefined) => {
+      queryClient.setQueryData(['folderById', updatedFields.id], (old: FolderData | undefined) => {
         return old ? { ...old, ...updatedFields } : old;
       });
 
@@ -174,12 +212,12 @@ export const useUpdateFolder = (folderId: string) => {
 
     // 3. Rollback if things go wrong
     onError: (err, newTodo, context) => {
-      queryClient.setQueryData(['folderById', folderId], context?.previousFolder);
+      queryClient.setQueryData(['folderById', newTodo.id], context?.previousFolder);
     },
 
     // 4. Final sync (refetch to ensure we are in sync with server)
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['folderById', folderId] });
+    onSettled: (any, error, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['folderById', variables.id] });
     },
   });
 };

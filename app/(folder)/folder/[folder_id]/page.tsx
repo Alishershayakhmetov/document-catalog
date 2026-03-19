@@ -10,6 +10,8 @@ import {
   Check,
   FileText,
   CalendarDays,
+  Edit,
+  LogOut,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useFolderById, useDeleteFolder } from "@/hooks/folder";
@@ -52,7 +54,7 @@ export default function FolderDetailsPage() {
   const router = useRouter();
 
   const { data: folderData, isLoading, error } = useFolderById(folderId);
-  const { mutate: updateFolder, isPending: isFolderUpdating } = useUpdateFolder(folderId);
+  const { mutate: updateFolder, isPending: isFolderUpdating } = useUpdateFolder();
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
   const { mutate: updateFile, isPending: isFileUpdating } = useUpdateFile();
   const { mutate: addFiles, isPending: isFilesAdding } = useAddFiles();
@@ -65,6 +67,7 @@ export default function FolderDetailsPage() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [ isEditFolderModalOpen, setIsEditFolderModalOpen ] = useState(false);
 
   // const [addForm, setAddForm] = useState<FileFormState>(emptyForm);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
@@ -168,16 +171,6 @@ export default function FolderDetailsPage() {
     setIsEditModalOpen(false);
   };
 
-  const handleShare = async (file: FolderFile) => {
-    try {
-      const url = `${window.location.origin}/folder/${folderId}/${file.id}`;
-      await navigator.clipboard.writeText(url);
-      alert("File URL copied to clipboard");
-    } catch {
-      alert("Unable to share file URL");
-    }
-  };
-
   const handleEditFile = (e: React.SubmitEvent) => {
     e.preventDefault();
 
@@ -214,12 +207,39 @@ export default function FolderDetailsPage() {
     );
   };
 
+  const handleEditFolder = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+
+    const name = formData.get("name") as string;
+    const date = formData.get("date") as string;
+
+    console.log(name, date)
+
+    updateFolder({
+      id: folderId,
+      name,
+      date,
+    });
+
+    setIsEditFolderModalOpen(false)
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <section className="rounded-3xl bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 md:flex-row md:items-start md:justify-between">
             <div>
+              <button
+                onClick={() => router.push("/")}
+                className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <LogOut className="h-4 w-4" />
+                Вернуться на Главную страницу
+              </button>
+
               <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
                 {folderData?.name ?? "Folder"}
               </h1>
@@ -236,7 +256,16 @@ export default function FolderDetailsPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" />
-                  Add File
+                  Добавить Файлы
+                </button>
+
+                <button
+                  onClick={() => setIsEditFolderModalOpen(true)}
+                  disabled={!folderData || isFolderUpdating}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${"bg-blue-600 text-white hover:bg-blue-700"}`}
+                >
+                  <Edit className="h-4 w-4" />
+                  Изменить Папку
                 </button>
 
                 <button
@@ -249,20 +278,7 @@ export default function FolderDetailsPage() {
                   }`}
                 >
                   <Trash2 className="h-4 w-4" />
-                  {isDeleteMode
-                    ? selectedCount > 0
-                      ? `Delete Selected (${selectedCount})`
-                      : "Finish Delete"
-                    : "Delete Files"}
-                </button>
-
-                <button
-                  onClick={openDeleteFolderModal}
-                  disabled={!folderData || isFolderUpdating}
-                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${"bg-red-600 text-white hover:bg-red-700"}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete Folder
+                  {isDeleteMode ? `Выбранные Файлы: (${selectedCount})`: "Удалить Файлы"}
                 </button>
 
                 {isDeleteMode && (
@@ -271,16 +287,25 @@ export default function FolderDetailsPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                   >
                     <X className="h-4 w-4" />
-                    Cancel
+                    Отмена
                   </button>
                 )}
+
+                <button
+                  onClick={openDeleteFolderModal}
+                  disabled={!folderData || isFolderUpdating}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${"bg-red-600 text-white hover:bg-red-700"}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Удалить Папку
+                </button>
               </div>
             </div>
           </div>
 
           <div className="pt-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Attached files</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Выбранные Файлы</h2>
               <div className="text-sm text-gray-500">
                 {files.length} file{files.length !== 1 ? "s" : ""}
               </div>
@@ -288,26 +313,26 @@ export default function FolderDetailsPage() {
 
             {isDeleteMode && (
               <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Select files from the list, then click the delete button again.
+                Выберите файлы из списка, а затем снова нажмите кнопку "Удалить".
               </div>
             )}
 
             <div className="overflow-hidden rounded-2xl border border-gray-200">
               {isLoading ? (
-                <div className="p-10 text-center text-gray-500">Loading folder...</div>
+                <div className="p-10 text-center text-gray-500">Загрузка Папки...</div>
               ) : error || !folderData ? (
-                <div className="p-10 text-center text-red-500">Folder not found</div>
+                <div className="p-10 text-center text-red-500">Папка не найдена</div>
               ) : files.length > 0 ? (
                 <div className="divide-y divide-gray-200">
                   {files.map((file) => (
-                    <FileCard key={file.id} selectedFileIds={selectedFileIds} file={file} isDeleteMode={isDeleteMode} toggleFileSelection={toggleFileSelection} openEditModal={openEditModal} handleShare={handleShare} isFolderUpdating={isFolderUpdating} />
+                    <FileCard key={file.id} selectedFileIds={selectedFileIds} file={file} isDeleteMode={isDeleteMode} toggleFileSelection={toggleFileSelection} openEditModal={openEditModal} isFolderUpdating={isFolderUpdating} />
                   ))}
                 </div>
               ) : (
                 <div className="px-6 py-16 text-center">
-                  <p className="text-lg font-semibold text-gray-900">No files attached</p>
+                  <p className="text-lg font-semibold text-gray-900">Нет Файлов</p>
                   <p className="mt-2 text-sm text-gray-500">
-                    Add files to this folder to manage them here.
+                    Добавьте файлы в эту папку, чтобы управлять ими здесь.
                   </p>
                 </div>
               )}
@@ -320,7 +345,7 @@ export default function FolderDetailsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl ">
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Add Files</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Добавить Файлы</h3>
               <button
                 onClick={() => setIsAddModalOpen(false)}
                 className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
@@ -339,14 +364,14 @@ export default function FolderDetailsPage() {
                   onClick={() => setIsAddModalOpen(false)}
                   className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                 >
-                  Cancel
+                  Отмена
                 </button>
                 <button
                   type="submit"
                   disabled={isFolderUpdating}
                   className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Add File
+                  Добавить Файлы
                 </button>
               </div>
             </form>
@@ -370,7 +395,7 @@ export default function FolderDetailsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl ">
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-900">Delete Folder</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Удалить Папку</h3>
               <button
                 onClick={() => setIsDeleteFolderMode(false)}
                 className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
@@ -380,33 +405,82 @@ export default function FolderDetailsPage() {
             </div>
 
             {folderData?.files.length !== 0 && (
-              <h3 className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800      font-semibold text-gray-900">You cannot delete folder if it has files</h3>
+              <h3 className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 font-semibold text-gray-900">Вы не можете удалить папку, поскольку в нем все еще храняться файлы</h3>
             )}         
 
-            <h3 className="text-l font-semibold text-gray-900">Are you sure you want to delete folder?</h3>
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={folderData?.files.length !== 0 || isFolderDeleting}
-                  onClick={handleDeleteFolder}
-                  className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isFolderDeleting ? "Deleting..." : "Delete Folder"}
-                </button>
-              </div>
+            {folderData?.files.length === 0 && (
+              <h3 className="text-l font-semibold text-gray-900">Вы уверены, что хотите удалить папку?</h3>
+            )}         
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteFolderMode(false)}
+                className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                disabled={folderData?.files.length !== 0 || isFolderDeleting}
+                onClick={handleDeleteFolder}
+                className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isFolderDeleting ? "Удаление..." : "Удалить Папку"}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
+      {isEditFolderModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl ">
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-xl font-semibold text-gray-900">Изменить Папку</h3>
+              <button
+                onClick={() => setIsEditFolderModalOpen(false)}
+                className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
+            <form onSubmit={handleEditFolder}>
+              <div className="space-y-4 mb-5">
+                <input
+                  name="name"
+                  defaultValue={folderData?.name}
+                  placeholder="Название папки"
+                  className="w-full rounded-xl border px-4 py-3 text-gray-700"
+                />
 
+                <input
+                  type="date"
+                  name="date"
+                  defaultValue={folderData?.date?.split("T")[0]}
+                  className="w-full rounded-xl border px-4 py-3 text-gray-700"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditFolderModalOpen(false)}
+                  className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isFolderDeleting ? "Изменения..." : "Изменить Папку"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
