@@ -4,18 +4,15 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { useAddCategory } from "@/hooks/catalog";
 import { catalogNames } from "./constant";
-import { CategoryType } from "@/shared/types/global";
 
 type Props = {
-  categoryType: CategoryType,
-  parentCategoryId: string | null;
+  parentId: string | null,
   onClose: () => void;
   isPending?: boolean;
 };
 
 export default function CreateCategoryModal({
-  categoryType,
-  parentCategoryId,
+  parentId,
   onClose,
   isPending = false,
 }: Props) {
@@ -30,8 +27,7 @@ export default function CreateCategoryModal({
   const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     addCategory({
-      categoryType: categoryType,
-      parentCategoryId: parentCategoryId,
+      parentCategoryId: parentId,
       createCategoryName: newCategoryInput,
     })
     onClose();
@@ -48,7 +44,7 @@ export default function CreateCategoryModal({
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">
-            Создать Новый {catalogNames[categoryType]}
+            Создать Новую Категорию
           </h2>
 
           <button
@@ -63,16 +59,15 @@ export default function CreateCategoryModal({
         <div className="mr-3 flex-1 overflow-y-auto pr-3">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="newCatalogInput" className="mb-2 block text-sm font-medium text-gray-700">
+              {/* <label className="mb-2 block text-sm font-medium text-gray-700">
                 {catalogNames[categoryType]}
-              </label>
+              </label> */}
 							<div className="flex">
 								<input
 									type="text"
-									id="newCatalogInput"
 									value={newCategoryInput}
 									onChange={(e) => setNewCategoryInput(e.target.value)}
-									placeholder={`Введите ${catalogNames[categoryType]}`}
+									placeholder={`Введите катаегорию`}
 									className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
 									required
 								/>

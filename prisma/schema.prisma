@@ -29,72 +29,36 @@ model Users {
   updatedAt DateTime @updatedAt
 }
 
-model Mall {
-  id String @id @default(cuid())
-  name String
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  // (ID-based path)
+  path      String   @unique
+
+  parentId  String?
+  parent    Category? @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
+
+  folders   Folder[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  catalogs Catalog[]
-  folders Folder[]
-}
-
-model Catalog {
-  id String @id @default(cuid())
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  mallId      String
-  mall        Mall            @relation(fields: [mallId], references: [id], onDelete: Restrict)
-
-  subcatalogs Subcatalog[]
-  folders Folder[]
-}
-
-model Subcatalog {
-  id String @id @default(cuid())
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  catalogId String
-  catalog   Catalog      @relation(fields: [catalogId], references: [id], onDelete: Restrict)
-
-  documentations Documentation[]
-  folders Folder[]
-}
-
-model Documentation {
-  id String @id @default(cuid())
-  name String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  subcatalogId String
-  subcatalog   Subcatalog  @relation(fields: [subcatalogId], references: [id], onDelete: Restrict)
-
-  folders Folder[]
+  @@index([path])
 }
 
 model Folder {
   id String @id @default(cuid())
   name String
   date DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  mallId String?
-  documentationId String?
-  catalogId String?
-  subcatalogId String?
-
-  mall Mall? @relation(fields: [mallId], references: [id], onDelete: Restrict)
-  documentation   Documentation? @relation(fields: [documentationId], references: [id], onDelete: Restrict)
-  catalog   Catalog? @relation(fields: [catalogId], references: [id], onDelete: Restrict)
-  subcatalog   Subcatalog? @relation(fields: [subcatalogId], references: [id], onDelete: Restrict)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 
   files        File[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   search_vector Unsupported("tsvector")?
 }
@@ -113,4 +77,7 @@ model File {
   systemName String
   description String?
   physicalLocation String?
+
+  @@index([systemName])
+  @@index([description])
 }

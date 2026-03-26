@@ -1,10 +1,9 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import FileUploadFields from "@/features/shared/fileUploadFields";
-import { Option, CatalogOption, SubcatalogOption, DocumentationOption} from "./types";
-import { useCatalogTree } from "@/hooks/catalog";
+import { useCatalogTree, CatalogTreeResponse } from "@/hooks/catalog";
 import { SelectedFileItem } from "@/shared/types/global";
 
 type Props = {
@@ -12,10 +11,7 @@ type Props = {
   onSubmit: (data: {
     folderName: string;
     folderDate: string;
-    shoppingMall: string | null;
-    documentation: string | null;
-    catalog: string | null;
-    subcatalog: string | null;
+    categoryIds: string[];
     files: SelectedFileItem[];
   }) => void;
   isPending?: boolean;
@@ -28,51 +24,51 @@ export default function CreateFolderModal({
 }: Props) {
   const [folderName, setFolderName] = useState("");
   const [folderDate, setFolderDate] = useState("");
-
-  // const [shoppingMall, setShoppingMall] = useState("");
-  // const [documentation, setDocumentation] = useState("");
-  // const [catalogue, setCatalogue] = useState("");
-  // const [subCatalogue, setSubCatalogue] = useState("");
-  
-  const [selectedMall, setSelectedMall] = useState<Option | null>(null);
-  const [selectedCatalog, setSelectedCatalog] = useState<CatalogOption | null>(null);
-  const [selectedSubcatalog, setSelectedSubcatalog] = useState<SubcatalogOption | null>(null);
-  const [selectedDocumentation, setSelectedDocumentation] = useState<DocumentationOption | null>(null);
+  // selectedPath is an array of selected node IDs, one per depth level
+  const [selectedPath, setSelectedPath] = useState<string[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
 
   const { data, isLoading, isError } = useCatalogTree();
 
-  const allMalls = data?.mall ?? [];
-  const allCatalogs = data?.catalog ?? [];
-  const allSubcatalogs = data?.subcatalog ?? [];
-  const allDocumentations = data?.documentation ?? [];
+  const tree: CatalogTreeResponse[] = data ?? [];
 
-  const catalogs = useMemo(() => {
-    if (!selectedMall) return [];
-    return allCatalogs.filter((item) => item.mallId === selectedMall.id);
-  }, [allCatalogs, selectedMall]);
+  // Build the list of dropdowns to show.
+  // Level 0: root nodes (nodes with no parent, i.e. top-level items in tree)
+  // Level N: children of the selected node at level N-1
+  const dropdownLevels: { nodes: CatalogTreeResponse["children"] | CatalogTreeResponse[]; label: string }[] = [];
 
-  const subcatalogs = useMemo(() => {
-    if (!selectedCatalog) return [];
-    return allSubcatalogs.filter((item) => item.catalogId === selectedCatalog.id);
-  }, [allSubcatalogs, selectedCatalog]);
+  // First dropdown: root-level nodes
+  dropdownLevels.push({ nodes: tree, label: "Категория" });
 
-  const documentations = useMemo(() => {
-    if (!selectedSubcatalog) return [];
-    return allDocumentations.filter(
-      (item) => item.subcatalogId === selectedSubcatalog.id
-    );
-  }, [allDocumentations, selectedSubcatalog]);
+  // For each selected node in the path, find its children and add a new dropdown
+  for (let i = 0; i < selectedPath.length; i++) {
+    const selectedId = selectedPath[i];
 
-  const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
+    // Find the node at this level
+    const levelNodes = i === 0 ? tree : dropdownLevels[i].nodes;
+    const selectedNode = (levelNodes as CatalogTreeResponse[]).find((n) => n.id === selectedId);
+
+    if (selectedNode && selectedNode.children.length > 0) {
+      // We need full CatalogNode data for children — find them from the flat tree
+      const childNodes = tree.filter((n) => n.parent?.id === selectedId);
+      dropdownLevels.push({ nodes: childNodes, label: `Подкатегория (уровень ${i + 1})` });
+    } else {
+      break;
+    }
+  }
+
+  const handleLevelChange = (levelIndex: number, selectedId: string) => {
+    // Trim the path to this level and set the new selection
+    const newPath = [...selectedPath.slice(0, levelIndex)];
+    if (selectedId) newPath.push(selectedId);
+    setSelectedPath(newPath);
+  };
 
   const resetForm = () => {
     setFolderName("");
     setFolderDate("");
     setSelectedFiles([]);
-    setSelectedMall(null);
-    setSelectedCatalog(null);
-    setSelectedSubcatalog(null);
-    setSelectedDocumentation(null);
+    setSelectedPath([]);
   };
 
   const handleClose = () => {
@@ -80,47 +76,17 @@ export default function CreateFolderModal({
     onClose();
   };
 
-  const handleSubmit = (e: React.SubmitEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     onSubmit({
       folderName,
       folderDate,
-      shoppingMall: selectedMall?.id || null,
-      catalog: selectedCatalog?.id || null,
-      subcatalog: selectedSubcatalog?.id || null,
-      documentation: selectedDocumentation?.id || null,
+      categoryIds: selectedPath,
       files: selectedFiles,
     });
 
     handleClose();
-  };
-
-  const handleMallChange = (mallId: string) => {
-    const mall = allMalls.find((item) => item.id === mallId) ?? null;
-    setSelectedMall(mall);
-    setSelectedCatalog(null);
-    setSelectedSubcatalog(null);
-    setSelectedDocumentation(null);
-  };
-
-  const handleCatalogChange = (catalogId: string) => {
-    const catalog = catalogs.find((item) => item.id === catalogId) ?? null;
-    setSelectedCatalog(catalog);
-    setSelectedSubcatalog(null);
-    setSelectedDocumentation(null);
-  };
-
-  const handleSubcatalogChange = (subcatalogId: string) => {
-    const subcatalog = subcatalogs.find((item) => item.id === subcatalogId) ?? null;
-    setSelectedSubcatalog(subcatalog);
-    setSelectedDocumentation(null);
-  };
-
-  const handleDocumentationChange = (documentationId: string) => {
-    const documentation =
-      documentations.find((item) => item.id === documentationId) ?? null;
-    setSelectedDocumentation(documentation);
   };
 
   return (
@@ -136,7 +102,6 @@ export default function CreateFolderModal({
           <h2 className="text-xl font-semibold text-gray-900">
             Создать Новую Папку
           </h2>
-
           <button
             onClick={handleClose}
             className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
@@ -175,79 +140,34 @@ export default function CreateFolderModal({
               />
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                ТРЦ
-              </label>
-              <select
-                value={selectedMall?.id ?? ""}
-                onChange={(e) => handleMallChange(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
-              >
-                <option value="">Выберите ТРЦ</option>
-                {allMalls.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Каталог
-              </label>
-              <select
-                value={selectedCatalog?.id ?? ""}
-                onChange={(e) => handleCatalogChange(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
-              >
-                <option value="">Выберите Каталог</option>
-                {catalogs.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Суб-Каталог
-              </label>
-
-              <select
-                value={selectedSubcatalog?.id ?? ""}
-                onChange={(e) => handleSubcatalogChange(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
-              >
-                <option value="">Выберите Суб-Каталог</option>
-                {subcatalogs.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Документация
-              </label>
-              <select
-                value={selectedDocumentation?.id ?? ""}
-                onChange={(e) => handleDocumentationChange(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
-              >
-                <option value="">Выберите Документация</option>
-                {documentations.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-
-            </div>
+            {/* Dynamic category dropdowns */}
+            {isLoading && (
+              <p className="text-sm text-gray-400">Загрузка категорий...</p>
+            )}
+            {isError && (
+              <p className="text-sm text-red-500">Ошибка загрузки категорий</p>
+            )}
+            {!isLoading &&
+              !isError &&
+              dropdownLevels.map((level, index) => (
+                <div key={index}>
+                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                    {level.label}
+                  </label>
+                  <select
+                    value={selectedPath[index] ?? ""}
+                    onChange={(e) => handleLevelChange(index, e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
+                  >
+                    <option value="">Выберите {level.label}</option>
+                    {(level.nodes as CatalogTreeResponse[]).map((node) => (
+                      <option key={node.id} value={node.id}>
+                        {node.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
 
             <FileUploadFields
               selectedFiles={selectedFiles}
@@ -262,7 +182,6 @@ export default function CreateFolderModal({
               >
                 Отмена
               </button>
-
               <button
                 type="submit"
                 disabled={isPending}

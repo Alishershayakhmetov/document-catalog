@@ -165,7 +165,7 @@ export default function FolderDetailsPage() {
     );
   };
 
-  const handleEditFolder = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEditFolder = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);

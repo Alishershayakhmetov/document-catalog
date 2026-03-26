@@ -10,43 +10,42 @@ export type FolderData = {
 }
 
 export type UseFoldersParams = {
-  mallId: string | null;
-  catalogId: string | null;
-  subcatalogId: string | null;
-  documentationId: string | null;
+  categoryIds: string[];
   search: string
 };
 
 type CreateFolderDTO = {
   folderName: string;
   folderDate: string;
-  shoppingMall: string | null;
-  catalog: string | null;
-  subcatalog: string | null;
-  documentation: string | null;
+  categoryIds: string[];
   files: {
     file: File;
+    description: string | undefined | null;
     physicalLocation: string;
   }[];
 };
 
 type FolderFilter = {
-  mallId: string | null;
-  catalogId: string | null;
-  subcatalogId: string | null;
-  documentationId: string | null;
+  categoryIds: string[];
 };
 
-async function fetchFolders(filters: UseFoldersParams) {
+export type FolderResponse = {
+  id: string;
+  name: string;
+  date: string;
+  fileCount: number;
+}
+
+async function fetchFolders(filters: UseFoldersParams) : Promise<FolderResponse[]> {
   const query = new URLSearchParams();
 
-  if (filters.mallId) query.set("mallId", filters.mallId);
-  if (filters.catalogId) query.set("catalogId", filters.catalogId);
-  if (filters.subcatalogId) query.set("subcatalogId", filters.subcatalogId);
-  if (filters.documentationId) query.set("documentationId", filters.documentationId);
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    // Loop through the array and append each ID individually
+    filters.categoryIds.forEach(id => query.append("categoryIds", id));
+  }
   if (filters.search) query.set("search", filters.search)
 
-  const response = await fetch(`/api/folder?${query.toString()}`);
+  const response = await fetch(query.toString().length ? `/api/folder?${query.toString()}` : "/api/folder");
 
   if (!response.ok) {
     throw new Error("Failed to fetch folders");
@@ -65,7 +64,7 @@ export const useFolders = (params: UseFoldersParams) => {
   return useQuery({
     queryKey: ["folders", params],
     queryFn: () => fetchFolders(params),
-    enabled: !params.search || params.search.length >= 2, // optional optimization
+    enabled: !params.search || params.search.length >= 2
   });
 };
 
@@ -93,15 +92,18 @@ const createFolder = async (data: CreateFolderDTO) => {
 
   formData.append("folderName", data.folderName);
   formData.append("folderDate", data.folderDate);
-  formData.append("shoppingMallId", data.shoppingMall ?? "");
-  formData.append("documentationId", data.documentation ?? "");
-  formData.append("catalogId", data.catalog ?? "");
-  formData.append("subcatalogId", data.subcatalog ?? "");
+
+  if (data.categoryIds && data.categoryIds.length > 0) {
+    data.categoryIds.forEach((id) => {
+      formData.append("categoryIds", id);
+    });
+  }
 
   // files metadata
   const metadata = data.files.map((f,index)=>({
     index,
-    physicalLocation:f.physicalLocation
+    physicalLocation: f.physicalLocation,
+    description: f.description
   }));
 
   formData.append(

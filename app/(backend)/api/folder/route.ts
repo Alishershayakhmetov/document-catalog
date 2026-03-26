@@ -1,99 +1,61 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import {
-  createFolder,
   parseFilesFormData,
   saveFilesToFolder,
 } from "@/lib/server/file-upload.service";
-
+/*
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const folders = await prisma.folder.findMany({
+      include: {
+        files: true,
+        category: true
+      },
+      orderBy: { createdAt: "desc" }
+    });
 
-    const mallId = searchParams.get("mallId");
-    const catalogId = searchParams.get("catalogId");
-    const subcatalogId = searchParams.get("subcatalogId");
-    const documentationId = searchParams.get("documentationId");
-    const search = searchParams.get("search");
+    // Fetch all categories
+    const allCategories = await prisma.category.findMany({
+      select: { id: true, name: true }
+    });
 
-    if (!search) {
-      // filter only, no search
-      const where = buildFolderFilter({
-        mallId,
-        catalogId,
-        subcatalogId,
-        documentationId,
-      });
+    const categoryMap = new Map(
+      allCategories.map(c => [c.id, c])
+    );
 
-      const folders = await prisma.folder.findMany({
-        where,
-        select: {
-          name: true,
-          id: true,
-          date: true,
-          _count: {
-            select: {
-              files: true
-            }
-          },
+    // Build result
+    const result = folders.map(folder => {
+      const ids = folder.category.path.split("/").filter(Boolean);
+
+      const fullPath = ids
+        .map(id => categoryMap.get(id)?.name)
+        .filter(Boolean)
+        .join(" / ");
+
+      return {
+        id: folder.id,
+        name: folder.name,
+        date: folder.date,
+        fileCount: folder.files.length,
+        fullPath,
+
+        // category for the folder
+        category: {
+          id: folder.category.id,
+          name: folder.category.name
         },
-        orderBy: {
-          updatedAt: "desc",
-        },
-      });
 
-      const parsedFolders = folders.map(folder => {
-        return {id: folder.id, name: folder.name, date: folder.date, fileCount: folder._count.files}
-      })
+        // full hierarchy
+        path: ids.map(id => ({
+          id,
+          name: categoryMap.get(id)?.name
+        })),
 
-      return NextResponse.json({ folders: parsedFolders});
-    }
-    else {
-      // filter and search
-      const { sql: filterSQL, values } = buildSQLFilter({
-        mallId,
-        catalogId,
-        subcatalogId,
-        documentationId,
-      });
+      };
+    });
 
-      // prepare tsquery
-      const tsQuery = search
-        .trim()
-        .split(/\s+/)
-        .map(word => `${word}:*`)
-        .join(" & ");
-
-      const result = await prisma.$queryRawUnsafe(`
-        SELECT 
-          id, 
-          name, 
-          date, 
-          "updatedAt", -- Added because you use it in ORDER BY
-          (SELECT COUNT(*) FROM "File" WHERE "File"."folderId" = "Folder".id)::integer AS "fileCount",
-          ts_rank(search_vector, to_tsquery('simple', $${values.length + 1})) AS rank,
-          similarity(name, $${values.length + 2}) AS sim
-        FROM "Folder"
-        WHERE
-          (${filterSQL})
-
-          AND (
-            search_vector @@ to_tsquery('simple', $${values.length + 1})
-            OR name ILIKE $${values.length + 2} || '%'
-            OR name % $${values.length + 2}
-          )
-
-        ORDER BY
-          (name ILIKE $${values.length + 2} || '%') DESC,
-          rank DESC,
-          sim DESC,
-          "updatedAt" DESC
-
-        LIMIT 20
-      `, ...values, tsQuery, search);
-
-      return NextResponse.json({ folders: result });
-    }
+    return NextResponse.json({ folders: result }, { status: 200 });
 
   } catch (error) {
     console.error(error);
@@ -103,122 +65,105 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+*/
 
-function buildSQLFilter({
-  mallId,
-  catalogId,
-  subcatalogId,
-  documentationId,
-}: any) {
-  const conditions: string[] = [];
-  const values: any[] = [];
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const categoryIds = searchParams.getAll("categoryIds"); // ?categoryIds=x&categoryIds=y
+    console.log(categoryIds)
+    // Build category filter only when IDs are provided
+    let categoryFilter = {};
 
-  if (mallId) {
-    values.push(mallId);
-    conditions.push(`"mallId" = $${values.length}`);
-  }
+    if (categoryIds.length > 0) {
+      const categories = await prisma.category.findMany({
+        where: { id: { in: categoryIds } },
+        select: { path: true }
+      });
 
-  if (catalogId) {
-    values.push(catalogId);
-    conditions.push(`"catalogId" = $${values.length}`);
-  }
+      const paths = categories.map(c => c.path);
 
-  if (subcatalogId) {
-    values.push(subcatalogId);
-    conditions.push(`"subcatalogId" = $${values.length}`);
-  }
+      // remove parent paths
+      const filteredPaths = paths.filter(p =>
+        !paths.some(other => other !== p && other.startsWith(p))
+      );
 
-  if (documentationId) {
-    values.push(documentationId);
-    conditions.push(`"documentationId" = $${values.length}`);
-  }
+      const pathFilters = filteredPaths.map(path => ({
+        path: { startsWith: path }
+      }));
 
-  return {
-    sql: conditions.length ? conditions.join(" AND ") : "TRUE",
-    values,
-  };
-}
+      
+      console.log("1", categories);
 
-function buildFolderFilter({
-  mallId,
-  catalogId,
-  subcatalogId,
-  documentationId,
-}: {
-  mallId: string | null;
-  catalogId: string | null;
-  subcatalogId: string | null;
-  documentationId: string | null;
-}) {
-  if (documentationId) {
-    return {
-      documentationId,
-    };
-  }
+      categoryFilter = {
+        category: {
+          is: {
+            OR: pathFilters
+          }
+        }
+      };
 
-  if (subcatalogId) {
-    return {
-      OR: [
-        { subcatalogId: subcatalogId },
-        {
-          documentation: {
-            subcatalogId,
-          },
+      console.log("2", JSON.stringify(categoryFilter, null, 2));
+    }
+
+    const folders = await prisma.folder.findMany({
+      where: categoryFilter,
+      include: {
+        files: true,
+        category: true
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    // Collect all ancestor category IDs from paths
+    const allCategoryIds = new Set<string>();
+    folders.forEach(folder => {
+      folder.category.path.split("/").filter(Boolean).forEach(id => {
+        allCategoryIds.add(id);
+      });
+    });
+
+    const allCategories = await prisma.category.findMany({
+      where: { id: { in: Array.from(allCategoryIds) } },
+      select: { id: true, name: true }
+    });
+
+    const categoryMap = new Map(allCategories.map(c => [c.id, c]));
+
+    const result = folders.map(folder => {
+      const ids = folder.category.path.split("/").filter(Boolean);
+
+      const fullPath = ids
+        .map(id => categoryMap.get(id)?.name)
+        .filter(Boolean)
+        .join(" / ");
+
+      return {
+        id: folder.id,
+        name: folder.name,
+        date: folder.date,
+        fileCount: folder.files.length,
+        fullPath,
+        category: {
+          id: folder.category.id,
+          name: folder.category.name
         },
-      ],
-    };
-  }
+        path: ids.map(id => ({
+          id,
+          name: categoryMap.get(id)?.name
+        })),
+      };
+    });
 
-  if (catalogId) {
-    return {
-      OR: [
-        { catalogId: catalogId },
-        {
-          subcatalog: {
-            catalogId,
-          },
-        },
-        {
-          documentation: {
-            subcatalog: {
-              catalogId,
-            },
-          },
-        },
-      ],
-    };
-  }
+    return NextResponse.json({ folders: result }, { status: 200 });
 
-  if (mallId) {
-    return {
-      OR: [
-        { mallId },
-        {
-          catalog: {
-            mallId,
-          },
-        },
-        {
-          subcatalog: {
-            catalog: {
-              mallId,
-            },
-          },
-        },
-        {
-          documentation: {
-            subcatalog: {
-              catalog: {
-                mallId,
-              },
-            },
-          },
-        },
-      ],
-    };
+  } catch (error) {
+    console.error("Fetch folders error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch folders" },
+      { status: 500 }
+    );
   }
-
-  return {};
 }
 
 export async function POST(request: Request) {
@@ -227,10 +172,7 @@ export async function POST(request: Request) {
 
     const folderName = formData.get("folderName") as string;
     const folderDate = formData.get("folderDate") as string;
-    const shoppingMall = formData.get("shoppingMallId") as string | null;
-    const documentation = formData.get("documentationId") as string | null;
-    const catalog = formData.get("catalogId") as string | null;
-    const subCatalog = formData.get("subcatalogId") as string | null;
+    const categoryIds = formData.getAll("categoryIds") as string[];
 
     if (!folderName || !folderDate) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
@@ -238,19 +180,17 @@ export async function POST(request: Request) {
 
     const { files, filesMetadata } = parseFilesFormData(formData);
 
-    if ((documentation && !subCatalog) || (subCatalog && !catalog) || (catalog && !shoppingMall))     
-      return NextResponse.json(
-      { error: "Category Ids conflict" },
-      { status: 409 }
-    );
+    const currentCategory = await categorySanityCheck(categoryIds);
+    if(!currentCategory.success) {
+      return NextResponse.json({ error: currentCategory.error }, { status: currentCategory.status });
+    }   
 
-    const folder = await createFolder({
-      folderName,
-      folderDate,
-      shoppingMallId: shoppingMall,
-      catalogId: catalog,
-      subCatalogId: subCatalog,
-      documentationId: documentation,
+    const folder = await prisma.folder.create({
+      data: {
+        name: folderName,
+        date: new Date(folderDate),
+        categoryId: currentCategory.data.id
+      },
     });
 
     const createdFiles = await saveFilesToFolder({
@@ -273,4 +213,60 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+type SanityCheckResult = 
+  | { success: true; data: {
+      id: string;
+      name: string;
+      path: string;
+      parentId: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+  } } 
+  | { success: false; error: string; status: number };
+
+async function categorySanityCheck(categoryIds: string[]): Promise<SanityCheckResult> {
+  const categories = await prisma.category.findMany({
+    where: { id: { in: categoryIds } }
+  });
+
+  // 1. Check all IDs exist
+  if (categories.length !== categoryIds.length) {
+    return { success: false, error: "Some categories not found", status: 404 };
+  }
+
+  // 2. Build map
+  const map = new Map(categories.map(c => [c.id, c]));
+
+  // 3. Validate chain
+  for (const category of categories) {
+    if (category.parentId && !map.has(category.parentId)) {
+      return { success: false, error: "Category hierarchy is broken", status: 409 };
+    }
+  }
+
+  // sort categories by depth (or build chain manually)
+  const root = categories.find(c => c.parentId === null);
+
+  if (!root) {
+    return { success: false, error: "Missing root category", status: 400 };
+  }
+
+  let current = root;
+
+  while (true) {
+    const child = categories.find(c => c.parentId === current.id);
+
+    if (!child) break;
+
+    current = child;
+  }
+
+  // ensure all categories were used
+  if (current.id !== categories[categories.length - 1].id) {
+    return { success: false, error: "Invalid category chain", status: 409 };
+  }
+
+  return { success: true, data: current };
 }

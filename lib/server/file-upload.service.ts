@@ -65,49 +65,6 @@ export async function saveFilesToFolder(params: {
   return createdFiles;
 }
 
-export async function createFolder(data: {
-  folderName: string;
-  folderDate: string;
-  shoppingMallId?: string | null;
-  documentationId?: string | null;
-  catalogId?: string | null;
-  subCatalogId?: string | null;
-}) {
-  let {
-    folderName,
-    folderDate,
-    shoppingMallId,
-    documentationId,
-    catalogId,
-    subCatalogId,
-  } = data;
-
-  console.log({
-    name: folderName,
-    date: new Date(folderDate),
-    mallId: catalogId ? null : shoppingMallId,
-    catalogId: subCatalogId ? null : catalogId,
-    subcatalogId: documentationId ? null : subCatalogId,
-    documentationId: documentationId,
-  })
-
-  shoppingMallId = shoppingMallId || null;
-  catalogId = catalogId || null;
-  subCatalogId = subCatalogId || null;
-  documentationId = documentationId || null;
-
-  return prisma.folder.create({
-    data: {
-      name: folderName,
-      date: new Date(folderDate),
-      mallId: catalogId ? null : shoppingMallId,
-      catalogId: subCatalogId ? null : catalogId,
-      subcatalogId: documentationId ? null : subCatalogId,
-      documentationId: documentationId,
-    },
-  });
-}
-
 export function parseFilesFormData(formData: FormData) {
   const files = formData.getAll("files") as File[];
   const filesMetadataRaw = formData.get("filesMetadata") as string | null;

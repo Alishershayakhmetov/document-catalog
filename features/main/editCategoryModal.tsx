@@ -2,48 +2,48 @@
 
 import { X } from "lucide-react";
 import { useState } from "react";
-import { useEditCategory } from "@/hooks/catalog";
-import { Option, CatalogOption, SubcatalogOption, DocumentationOption} from "./types";
-import { catalogNames } from "./constant";
-import { CategoryType } from "@/shared/types/global";
+import { useEditCategory, CatalogTreeResponse } from "@/hooks/catalog";
 
 type Props = {
-  categoryType: CategoryType,
-  categoryList: Option[] | CatalogOption[] | SubcatalogOption[] | DocumentationOption[] | undefined;
+  categoryList: CatalogTreeResponse[] | undefined;
   onClose: () => void;
   isPending?: boolean;
 };
 
 export default function EditCategoryModal({
-  categoryType,
   categoryList,
   onClose,
   isPending = false,
 }: Props) {
-  const [ selectedEditCategory, setSelectedEditCategory ] = useState<Option | CatalogOption | SubcatalogOption | DocumentationOption | null>(null);
-  const [ newName, setNewName ] = useState("");
-	const { mutate: editCategory, isPending: isCategoryEditing } = useEditCategory();
+  const [selectedId, setSelectedId] = useState<string>("");
+  const [newName, setNewName] = useState("");
+  const { mutate: editCategory, isPending: isCategoryEditing } = useEditCategory();
 
-  const handleEditCategory = (categoryId: string) => {
-    if (!categoryList) return;
-    const selected = categoryList.find((item) => item.id === categoryId) ?? null;
-    setSelectedEditCategory(selected);
+  const selectedNode = categoryList?.find((n) => n.id === selectedId) ?? null;
+
+  const handleSelectChange = (categoryId: string) => {
+    setSelectedId(categoryId);
+    // Pre-fill the new name with the current name so user can edit from it
+    const node = categoryList?.find((n) => n.id === categoryId);
+    setNewName(node?.name ?? "");
   };
 
   const handleClose = () => {
-    setSelectedEditCategory(null);
+    setSelectedId("");
+    setNewName("");
     onClose();
   };
 
-  const handleSubmit = (e: React.SubmitEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedId || !newName.trim()) return;
+
     editCategory({
-      categoryType: categoryType,
-      categoryId: selectedEditCategory?.id!,
-			newName: newName
-    })
-		onClose();
-  }
+      categoryId: selectedId,
+      newName: newName.trim(),
+    });
+    handleClose();
+  };
 
   return (
     <div
@@ -56,7 +56,7 @@ export default function EditCategoryModal({
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">
-            Изменить {catalogNames[categoryType]}
+            Изменить Категорию
           </h2>
 
           <button
@@ -70,34 +70,58 @@ export default function EditCategoryModal({
 
         <div className="mr-3 flex-1 overflow-y-auto pr-3">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="newCatalogInput" className="mb-2 block text-sm font-medium text-gray-700">
-                {catalogNames[categoryType]}
-              </label>
-							<div className="flex">
-								<select
-									id="newCatalogInput"
-									value={selectedEditCategory?.id || ""}
-									onChange={(e) => handleEditCategory(e.target.value)}
-									className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
-									required
-								>
-								<option value="" disabled>
-									Выберите {catalogNames[categoryType]}
-								</option>
 
-								{categoryList && categoryList.map((item) => (
-									<option key={item.id} value={item.id}>
-										{item.name}
-									</option>
-								))}
-								</select>
-							</div>
+            {/* Category selector */}
+            <div>
+              <label
+                htmlFor="editCategorySelect"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Категория
+              </label>
+              <select
+                id="editCategorySelect"
+                value={selectedId}
+                onChange={(e) => handleSelectChange(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400"
+                required
+              >
+                <option value="" disabled>
+                  Выберите Категорию
+                </option>
+                {categoryList?.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.parent ? `${item.parent.name} / ${item.name}` : item.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
-						<div> 
-
-						</div>
+            {/* New name input — only shown after a category is selected */}
+            {selectedNode && (
+              <div>
+                <label
+                  htmlFor="newCategoryName"
+                  className="mb-2 block text-sm font-medium text-gray-700"
+                >
+                  Новое название
+                </label>
+                <input
+                  id="newCategoryName"
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Введите новое название"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
+                  required
+                />
+                {/* Hint showing the current name */}
+                <p className="mt-1 text-xs text-gray-400">
+                  Текущее название:{" "}
+                  <span className="font-medium text-gray-500">{selectedNode.name}</span>
+                </p>
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
               <button
@@ -110,10 +134,10 @@ export default function EditCategoryModal({
 
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || isCategoryEditing || !selectedId || !newName.trim()}
                 className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isPending ? "Изменение..." : "Изменить"}
+                {isPending || isCategoryEditing ? "Изменение..." : "Изменить"}
               </button>
             </div>
           </form>

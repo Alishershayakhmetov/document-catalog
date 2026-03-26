@@ -2,10 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { Paperclip } from "lucide-react";
-import { Folder } from "@/hooks/folder";
+import { FolderResponse } from "@/hooks/folder";
 import { formatDate } from "@/utils/dateUtils";
 
-export default function FolderList({ folders }: {folders: Folder[]}) {
+export default function FolderList({ folders }: {folders: FolderResponse[]}) {
   const router = useRouter();
 
   const handleRowClick = (

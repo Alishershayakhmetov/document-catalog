@@ -1,49 +1,35 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
-import { useMemo, useState } from "react";
-import FileUploadFields from "@/features/shared/fileUploadFields";
-import { useAddCategory, useDeleteCategory } from "@/hooks/catalog";
-import { Option, CatalogOption, SubcatalogOption, DocumentationOption} from "./types";
-import { catalogNames } from "./constant";
-import { CategoryType } from "@/shared/types/global";
+import { X } from "lucide-react";
+import { useState } from "react";
+import { useDeleteCategory, CatalogTreeResponse } from "@/hooks/catalog";
 
 type Props = {
-  categoryType: CategoryType,
-  categoryList: Option[] | CatalogOption[] | SubcatalogOption[] | DocumentationOption[] | undefined;
+  categoryList: CatalogTreeResponse[] | undefined;
   onClose: () => void;
   isPending?: boolean;
 };
 
 export default function DeleteCategoryModal({
-  categoryType,
   categoryList,
   onClose,
   isPending = false,
 }: Props) {
-  const [ selectedDeleteCategory, setSelectedDeleteCategory ] = useState<Option | CatalogOption | SubcatalogOption | DocumentationOption | null>(null);
+  const [selectedId, setSelectedId] = useState<string>("");
   const { mutate: deleteCategory, isPending: isCategoryDeleting } = useDeleteCategory();
 
-  const handleDeleteCategory = (categoryId: string) => {
-    if (!categoryList) return;
-    const selected = categoryList.find((item) => item.id === categoryId) ?? null;
-    setSelectedDeleteCategory(selected);
-  };
-
   const handleClose = () => {
-    setSelectedDeleteCategory(null);
+    setSelectedId("");
     onClose();
   };
 
-  const handleSubmit = (e: React.SubmitEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(selectedDeleteCategory)
-    deleteCategory({
-      categoryType: categoryType,
-      categoryId: selectedDeleteCategory?.id!,
-    })
-    onClose();
-  }
+    if (!selectedId) return;
+
+    deleteCategory({ categoryId: selectedId });
+    handleClose();
+  };
 
   return (
     <div
@@ -56,7 +42,7 @@ export default function DeleteCategoryModal({
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900">
-            Удалить {catalogNames[categoryType]}
+            Удалить Категорию
           </h2>
 
           <button
@@ -71,29 +57,48 @@ export default function DeleteCategoryModal({
         <div className="mr-3 flex-1 overflow-y-auto pr-3">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="newCatalogInput" className="mb-2 block text-sm font-medium text-gray-700">
-                {catalogNames[categoryType]}
+              <label
+                htmlFor="deleteCategorySelect"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Категория
               </label>
-								<div className="flex">
-									<select
-										id="newCatalogInput"
-										value={selectedDeleteCategory?.id || ""}
-										onChange={(e) => handleDeleteCategory(e.target.value)}
-										className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
-										required
-									>
-                    <option value="" disabled>
-                      Выберите {catalogNames[categoryType]}
-                    </option>
 
-                    {categoryList && categoryList.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
-								</div>
+              <select
+                id="deleteCategorySelect"
+                value={selectedId}
+                onChange={(e) => setSelectedId(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400"
+                required
+              >
+                <option value="" disabled>
+                  Выберите Категорию
+                </option>
+                {categoryList?.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {/* Show full path for clarity when categories are nested */}
+                    {item.parent ? `${item.parent.name} / ${item.name}` : item.name}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {/* Confirmation detail for the selected item */}
+            {selectedId && (() => {
+              const node = categoryList?.find((n) => n.id === selectedId);
+              return node ? (
+                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  Вы уверены, что хотите удалить{" "}
+                  <span className="font-semibold">«{node.name}»</span>?
+                  {node.children.length > 0 && (
+                    <p className="mt-1 text-xs text-red-500">
+                      Внимание: у этой категории есть {node.children.length} подкатегори
+                      {node.children.length === 1 ? "я" : node.children.length < 5 ? "и" : "й"}.
+                    </p>
+                  )}
+                </div>
+              ) : null;
+            })()}
 
             <div className="flex justify-end gap-3 pt-2">
               <button
@@ -106,10 +111,10 @@ export default function DeleteCategoryModal({
 
               <button
                 type="submit"
-                disabled={isPending}
-                className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isPending || isCategoryDeleting || !selectedId}
+                className="rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isPending ? "Удаления..." : "Удалить"}
+                {isPending || isCategoryDeleting ? "Удаление..." : "Удалить"}
               </button>
             </div>
           </form>

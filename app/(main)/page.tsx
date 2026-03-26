@@ -7,25 +7,16 @@ import FolderList from "@/features/main/render_folder_list";
 import CreateFolderModal from "@/features/main/createFolderModal";
 import FilterFolderModal from "@/features/main/filterFolderModal";
 import { useDebounce } from "@/hooks/debounce";
+import { SelectedFileItem } from "@/shared/types/global";
 
-type SelectedFileItem = {
-  file: File;
-  physicalLocation: string;
-};
 
 const debounce_time = 300;
 
 export default function FoldersPage() {
   const [folderFilters, setFolderFilters] = useState<{
-    mallId: string | null;
-    catalogId: string | null;
-    subcatalogId: string | null;
-    documentationId: string | null;
+    categoryIds: string[]
   }>({
-    mallId: null,
-    catalogId: null,
-    subcatalogId: null,
-    documentationId: null,
+    categoryIds: []
   });
 
   const [ searchInput, setSearchInput ] = useState("");
@@ -49,20 +40,14 @@ export default function FoldersPage() {
   const handleCreateFolder = (data: {
     folderName: string;
     folderDate: string;
-    shoppingMall: string | null;
-    documentation: string | null;
-    catalog: string | null;
-    subcatalog: string | null;
     files: SelectedFileItem[];
+    categoryIds: string[];
   }) => {
     createFolderMutation.mutate(data);
   };
 
   const handleFilterFolders = (filters: {
-    mallId: string | null;
-    catalogId: string | null;
-    subcatalogId: string | null;
-    documentationId: string | null;
+    categoryIds: string[];
   }) => {
     setFolderFilters(filters);
   };

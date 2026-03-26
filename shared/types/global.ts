@@ -1,4 +1,8 @@
-export type CategoryType = "mall" | "documentation" | "catalog" | "subcatalog";
+export type CategoryType = {
+  id: string;
+  name: string;
+  parentId: string | null;
+}
 
 export type SelectedFileItem = {
   file: File;
