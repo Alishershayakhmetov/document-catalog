@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const categoryIds = searchParams.getAll("categoryIds"); // ?categoryIds=x&categoryIds=y
+    const categoryIds = searchParams.getAll("categoryIds");
     console.log(categoryIds)
     // Build category filter only when IDs are provided
     let categoryFilter = {};

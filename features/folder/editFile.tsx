@@ -43,7 +43,6 @@ export default function EditFileModal({
 								setEditForm((prev) => ({ ...prev, description: e.target.value }))
 							}
 							className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 text-gray-900 placeholder:text-gray-400 bg-white"
-							required
 						/>
 					</div>
 

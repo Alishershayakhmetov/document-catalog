@@ -34,6 +34,11 @@ export type FolderResponse = {
   name: string;
   date: string;
   fileCount: number;
+  fullPath: string;
+  path: {
+    id: string;
+    name: string;
+  }[]
 }
 
 async function fetchFolders(filters: UseFoldersParams) : Promise<FolderResponse[]> {
@@ -228,5 +233,42 @@ async function filterFolders(filters: FolderFilter) {
 export function useFilterFolders() {
   return useMutation({
     mutationFn: filterFolders,
+  });
+}
+
+export type SearchResponse = {
+  file_id: string;
+  mimeType: string;
+  fileSize: string;
+  description: string;
+  systemName: string;
+  uploadedAt: string;
+  folder_id: string;
+  folder_name: string;
+  folder_date: string;
+  rank: string;
+  similarity_score: string; 
+}
+
+async function fetchBySearch(search: string) : Promise<SearchResponse[]>{
+
+  const response = await fetch("/api/search", {
+    method: "POST",
+    body: JSON.stringify({search: search})
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch result");
+  }
+
+  const data: {results: SearchResponse[]} = await response.json();
+  return data?.results ?? [];
+}
+
+export function useSearch(search: string) {
+  return useQuery({
+    queryKey: ["search", search],
+    queryFn: () => fetchBySearch(search),
+    enabled: search.length >= 2
   });
 }

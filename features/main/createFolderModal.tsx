@@ -24,45 +24,46 @@ export default function CreateFolderModal({
 }: Props) {
   const [folderName, setFolderName] = useState("");
   const [folderDate, setFolderDate] = useState("");
-  // selectedPath is an array of selected node IDs, one per depth level
   const [selectedPath, setSelectedPath] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
 
   const { data, isLoading, isError } = useCatalogTree();
 
-  const tree: CatalogTreeResponse[] = data ?? [];
+  // Flat list — the API returns all nodes at all depths in one array
+  const flatNodes: CatalogTreeResponse[] = data ?? [];
 
-  // Build the list of dropdowns to show.
-  // Level 0: root nodes (nodes with no parent, i.e. top-level items in tree)
-  // Level N: children of the selected node at level N-1
-  const dropdownLevels: { nodes: CatalogTreeResponse["children"] | CatalogTreeResponse[]; label: string }[] = [];
+  // Build dropdown levels dynamically from the flat list
+  // Level 0: root nodes (parent === null)
+  // Level N: nodes whose parentId === selectedPath[N-1]
+  const dropdownLevels: { nodes: CatalogTreeResponse[]; label: string }[] = [];
 
-  // First dropdown: root-level nodes
-  dropdownLevels.push({ nodes: tree, label: "Категория" });
+  const rootNodes = flatNodes.filter((n) => n.parent === null);
+  if (rootNodes.length > 0) {
+    dropdownLevels.push({ nodes: rootNodes, label: "Категория" });
+  }
 
-  // For each selected node in the path, find its children and add a new dropdown
   for (let i = 0; i < selectedPath.length; i++) {
-    const selectedId = selectedPath[i];
+    const parentId = selectedPath[i];
+    const children = flatNodes.filter((n) => n.parent?.id === parentId);
 
-    // Find the node at this level
-    const levelNodes = i === 0 ? tree : dropdownLevels[i].nodes;
-    const selectedNode = (levelNodes as CatalogTreeResponse[]).find((n) => n.id === selectedId);
-
-    if (selectedNode && selectedNode.children.length > 0) {
-      // We need full CatalogNode data for children — find them from the flat tree
-      const childNodes = tree.filter((n) => n.parent?.id === selectedId);
-      dropdownLevels.push({ nodes: childNodes, label: `Подкатегория (уровень ${i + 1})` });
+    if (children.length > 0) {
+      dropdownLevels.push({
+        nodes: children,
+        label: `Подкатегория (уровень ${i + 1})`,
+      });
     } else {
-      break;
+      break; // selected node has no children, stop adding levels
     }
   }
 
   const handleLevelChange = (levelIndex: number, selectedId: string) => {
-    // Trim the path to this level and set the new selection
-    const newPath = [...selectedPath.slice(0, levelIndex)];
+    const newPath = selectedPath.slice(0, levelIndex);
     if (selectedId) newPath.push(selectedId);
     setSelectedPath(newPath);
   };
+
+  // The deepest selected ID is the actual categoryId for the folder
+  const selectedCategoryId = selectedPath.at(-1) ?? "";
 
   const resetForm = () => {
     setFolderName("");
@@ -82,7 +83,7 @@ export default function CreateFolderModal({
     onSubmit({
       folderName,
       folderDate,
-      categoryIds: selectedPath,
+      categoryIds: selectedPath, // single ID — the deepest selected node
       files: selectedFiles,
     });
 
@@ -140,34 +141,32 @@ export default function CreateFolderModal({
               />
             </div>
 
-            {/* Dynamic category dropdowns */}
             {isLoading && (
               <p className="text-sm text-gray-400">Загрузка категорий...</p>
             )}
             {isError && (
               <p className="text-sm text-red-500">Ошибка загрузки категорий</p>
             )}
-            {!isLoading &&
-              !isError &&
-              dropdownLevels.map((level, index) => (
-                <div key={index}>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    {level.label}
-                  </label>
-                  <select
-                    value={selectedPath[index] ?? ""}
-                    onChange={(e) => handleLevelChange(index, e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
-                  >
-                    <option value="">Выберите {level.label}</option>
-                    {(level.nodes as CatalogTreeResponse[]).map((node) => (
-                      <option key={node.id} value={node.id}>
-                        {node.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
+
+            {!isLoading && !isError && dropdownLevels.map((level, index) => (
+              <div key={index}>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  {level.label}
+                </label>
+                <select
+                  value={selectedPath[index] ?? ""}
+                  onChange={(e) => handleLevelChange(index, e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700"
+                >
+                  <option value="">Выберите {level.label}</option>
+                  {level.nodes.map((node) => (
+                    <option key={node.id} value={node.id}>
+                      {node.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
 
             <FileUploadFields
               selectedFiles={selectedFiles}
@@ -184,7 +183,7 @@ export default function CreateFolderModal({
               </button>
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || !selectedCategoryId}
                 className="rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isPending ? "Создание..." : "Создать"}

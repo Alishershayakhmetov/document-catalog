@@ -24,45 +24,63 @@ export async function POST(request: Request) {
   try {
     const { createCategoryName, parentCategoryId } = await request.json();
 
-    if (!createCategoryName || !parentCategoryId) {
+    if (!createCategoryName) {
       return NextResponse.json(
         { error: "Missing fields" },
         { status: 400 }
       );
     }
-
-    const parentCategory = await prisma.category.findFirst({
-      where: {
-        id: parentCategoryId
-      }, 
-      select: {
-        path: true
+    if (parentCategoryId) {
+      const parentCategory = await prisma.category.findFirst({
+        where: {
+          id: parentCategoryId
+        }, 
+        select: {
+          path: true
+        }
+      })
+      if (!parentCategory) {
+        return NextResponse.json(
+          { error: "Parent not found" },
+          { status: 404 }
+        );
       }
-    })
-    if (!parentCategory) {
-      return NextResponse.json(
-        { error: "Parent not found" },
-        { status: 404 }
-      );
+
+      const id = createId();
+
+      const path = parentCategory.path
+        ? `${parentCategory.path}/${id}`
+        : `/${id}`;
+
+      const createdCategory = await prisma.category.create({
+        data: {
+          id: id,
+          name: createCategoryName,
+          parentId: parentCategoryId,
+          path: path
+        }
+      })
+
+      return NextResponse.json(createdCategory, { status: 201 });
+    } else {
+      const id = createId();
+
+      const path = `/${id}`;
+
+      const createdCategory = await prisma.category.create({
+        data: {
+          id: id,
+          name: createCategoryName,
+          parentId: parentCategoryId,
+          path: path
+        }
+      })
+      
+      return NextResponse.json(createdCategory, { status: 201 });
     }
-
-    const id = createId();
-
-    const path = parentCategory.path
-      ? `${parentCategory.path}/${id}`
-      : `/${id}`;
-
-    const createdCategory = await prisma.category.create({
-      data: {
-        id: id,
-        name: createCategoryName,
-        parentId: parentCategoryId,
-        path: path
-      }
-    })
-
-    return NextResponse.json(createdCategory, { status: 201 });
+    
   } catch (error) {
+    console.log(error)
     return NextResponse.json(
       { error: "Failed to create category" },
       { status: 500 }

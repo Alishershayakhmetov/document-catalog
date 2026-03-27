@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -9,7 +9,7 @@ import {
   Edit,
   LogOut,
 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useFolderById, useDeleteFolder } from "@/hooks/folder";
 import { useUpdateFolder } from "@/hooks/folder";
 import { formatDate } from "@/utils/dateUtils";
@@ -28,8 +28,11 @@ const emptyForm: FileCardInfoState = {
 
 export default function FolderDetailsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const folderId = params.folder_id as string;
+  const highlightFileId = searchParams.get('fileId');
   const router = useRouter();
+  const fileRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const { data: folderData, isLoading, error } = useFolderById(folderId);
   const { mutate: updateFolder, isPending: isFolderUpdating } = useUpdateFolder();
@@ -52,6 +55,25 @@ export default function FolderDetailsPage() {
 
   const files: FileCardInfo[] = folderData?.files ?? [];
   const selectedCount = useMemo(() => selectedFileIds.length, [selectedFileIds]);
+
+  useEffect(() => {
+    if (!highlightFileId || !files.length) return;
+
+    const el = fileRefs.current[highlightFileId];
+
+    if (el) {
+      el.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+
+      el.classList.add('highlight');
+
+      setTimeout(() => {
+        el.classList.remove('highlight');
+      }, 2000);
+    }
+  }, [highlightFileId, files]);
 
   const toggleDeleteMode = () => {
     if (!folderData) return;
@@ -280,7 +302,22 @@ export default function FolderDetailsPage() {
               ) : files.length > 0 ? (
                 <div className="divide-y divide-gray-200">
                   {files.map((file) => (
-                    <FileCard key={file.id} selectedFileIds={selectedFileIds} file={file} isDeleteMode={isDeleteMode} toggleFileSelection={toggleFileSelection} openEditModal={openEditModal} isFolderUpdating={isFolderUpdating} />
+                    <div
+                      key={file.id}
+                      ref={(el) => {
+                        fileRefs.current[file.id] = el;
+                      }}
+                      className={file.id === highlightFileId ? "highlight" : "" }
+                    > 
+                      <FileCard 
+                        selectedFileIds={selectedFileIds} 
+                        file={file} 
+                        isDeleteMode={isDeleteMode} 
+                        toggleFileSelection={toggleFileSelection} 
+                        openEditModal={openEditModal} 
+                        isFolderUpdating={isFolderUpdating} 
+                      />
+                    </div>
                   ))}
                 </div>
               ) : (

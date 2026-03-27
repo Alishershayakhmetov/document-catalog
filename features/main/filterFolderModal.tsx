@@ -21,20 +21,16 @@ export default function FilterFolderModal({
   handleFilterFolders,
   isPending = false,
 }: Props) {
-  // const [selectedMall, setSelectedMall] = useState<Option | null>(null);
-  // const [selectedCatalog, setSelectedCatalog] = useState<CatalogOption | null>(null);
-  // const [selectedSubcatalog, setSelectedSubcatalog] = useState<SubcatalogOption | null>(null);
-  // const [selectedDocumentation, setSelectedDocumentation] = useState<DocumentationOption | null>(null);
-
   const [selectedPath, setSelectedPath] = useState<CategoryType[]>([]);
   const currentParentId = selectedPath.at(-1)?.id ?? null;
 
-  const [categorySelected, setCategorySelected] = useState<string | null>(null); 
+  const [categorySelected, setCategorySelected] = useState<string | null | "root">(null);
+  const categoryModalParentId = categorySelected === "root" ? null : categorySelected; 
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null); 
   const [categoryToEdit, setCategoryToEdit] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useCatalogTree();
-
+  
   const categories: CategoryType[] = useMemo(() => {
     if (!data) return [];
 
@@ -42,29 +38,18 @@ export default function FilterFolderModal({
       id: cat.id,
       name: cat.name,
       parentId: cat.parent?.id ?? null,
-    }));
+    })).filter(cat => cat.id); // safety
   }, [data]);
-
-  // const currentCategories = useMemo(() => {
-  //   return data?.filter(cat => cat.parent?.id === currentParentId) ?? [];
-  // }, [data, currentParentId]);
-
-  // const currentCategories = useMemo(() => {
-  //   if (!data) return [];
-
-  //   // root level
-  //   if (selectedPath.length === 0) {
-  //     return data.filter(cat => !cat.parent);
-  //   }
-
-  //   // last selected node → show its children
-  //   return selectedPath[selectedPath.length - 1].children || [];
-  // }, [data, selectedPath]);
 
   const currentCategories = useMemo(() => {
     const parentId = selectedPath.at(-1)?.id ?? null;
 
-    return categories.filter(cat => cat.parentId === parentId);
+    return categories.filter(cat => {
+      if (parentId === null) {
+        return cat.parentId === null; // ONLY roots
+      }
+      return cat.parentId === parentId;
+    });
   }, [categories, selectedPath]);
 
   const { mutate: addCategory, isPending: isCategoryAdding } = useAddCategory();
@@ -79,21 +64,15 @@ export default function FilterFolderModal({
   };
 
   const addNewCategory = () => {
-    setCategorySelected(currentParentId)
+    setCategorySelected(currentParentId ?? "root"); // if at root level, treat as root
   };
 
   const deleteCategory = () => {
-    // if (categoryName === "catalog" && !selectedMall) return;
-    // if (categoryName === "subcatalog" && !selectedCatalog) return;
-    // if (categoryName === "documentation" && !selectedSubcatalog) return;
 
     setCategoryToDelete(currentParentId);
   }
 
   const editCategory = () => {
-    // if (categoryName === "catalog" && !selectedMall) return;
-    // if (categoryName === "subcatalog" && !selectedCatalog) return;
-    // if (categoryName === "documentation" && !selectedSubcatalog) return;
 
     setCategoryToEdit(currentParentId);
   }
@@ -104,15 +83,6 @@ export default function FilterFolderModal({
     onClose();
   }
 
-  // const handleSelect = (levelIndex: number, categoryId: string) => {
-  //   const newPath = selectedPath.slice(0, levelIndex);
-
-  //   const selected = data?.find(c => c.id === categoryId);
-  //   if (selected) newPath.push(selected);
-
-  //   setSelectedPath(newPath);
-  // };
-
   const handleSelect = (levelIndex: number, categoryId: string) => {
     const newPath = selectedPath.slice(0, levelIndex);
 
@@ -121,13 +91,6 @@ export default function FilterFolderModal({
 
     setSelectedPath(newPath);
   };
-
-  // const handleAddLevel = (categoryId: string) => {
-  //   const selected = data?.find(c => c.id === categoryId);
-  //   if (selected) {
-  //     setSelectedPath(prev => [...prev, selected]);
-  //   }
-  // };
 
   const handleAddLevel = (categoryId: string) => {
     const selected = categories.find(c => c.id === categoryId);
@@ -158,18 +121,23 @@ export default function FilterFolderModal({
         </div>
 
         <div className="mr-3 flex-1 overflow-y-auto pr-3">
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">Категории</span>
+            <button
+              type="button"
+              onClick={() => setCategorySelected("root")} // sentinel value to open modal with null parentId
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+              <Plus className="h-4 w-4" />
+              Добавить корневую
+            </button>
+          </div>
+
           <form onSubmit={(e: React.SubmitEvent) => FilterFolders(e)} className="space-y-4">
 
             {selectedPath.map((level, index) => {
               const parentId = index === 0 ? null : selectedPath[index - 1].id;
-
-              console.log(selectedPath)
-
-              // const options =
-              //   index === 0
-              //     ? data?.filter(cat => !cat.parent)
-              //     : selectedPath[index - 1].children || [];
-                
               const options = categories.filter(cat => cat.parentId === parentId);
 
               return (
@@ -215,7 +183,7 @@ export default function FilterFolderModal({
             })}
 
             <select onChange={(e) => handleAddLevel(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400">
-              <option value="">Select</option>
+              <option value="">Выбрать</option>
               {currentCategories.map(cat => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
@@ -245,7 +213,7 @@ export default function FilterFolderModal({
 
         {categorySelected && (
           <CreateCategoryModal
-            parentId={currentParentId}
+            parentId={categoryModalParentId}
             onClose={() => setCategorySelected(null)}
             isPending={isCategoryAdding}
           />
