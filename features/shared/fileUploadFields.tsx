@@ -86,7 +86,7 @@ export default function FileUploadFields({
 
                 <div>
 									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Описания
+										Описание (Наименование)
 									</label>
 									<input
 										type="text"

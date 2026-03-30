@@ -92,9 +92,6 @@ export async function GET(request: NextRequest) {
         path: { startsWith: path }
       }));
 
-      
-      console.log("1", categories);
-
       categoryFilter = {
         category: {
           is: {
@@ -102,8 +99,6 @@ export async function GET(request: NextRequest) {
           }
         }
       };
-
-      console.log("2", JSON.stringify(categoryFilter, null, 2));
     }
 
     const folders = await prisma.folder.findMany({

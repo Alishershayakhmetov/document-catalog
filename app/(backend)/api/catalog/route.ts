@@ -99,7 +99,7 @@ function isValidCategoryType(value: unknown): value is CategoryType {
 
 export async function PATCH(request: Request) {
   try {
-    const { categoryId, name } = await request.json();
+    const { categoryId, newName } = await request.json();
 
     if (!categoryId || typeof categoryId !== "string") {
       return NextResponse.json(
@@ -108,7 +108,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    if (!name || typeof name !== "string" || !name.trim()) {
+    if (!newName || typeof newName !== "string" || !newName.trim()) {
       return NextResponse.json(
         { error: "name is required" },
         { status: 400 }
@@ -117,7 +117,7 @@ export async function PATCH(request: Request) {
 
     const updatedCategory = await prisma.category.update({
       where: { id: categoryId },
-      data: { name }
+      data: { name: newName }
     })
 
     return NextResponse.json(updatedCategory);

@@ -11,6 +11,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
+  // 1. Fetch the folder and its specific category path
   const folder = await prisma.folder.findUnique({
     where: { id },
     select: {
@@ -25,15 +26,41 @@ export async function GET(
           physicalLocation: true,
           description: true
         }
+      },
+      category: {
+        select: {
+          path: true,
+        }
       }
     }
   });
 
-  if (!folder) {
+  if (!folder || !folder.category) {
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(folder);
+  // 2. Extract IDs from the path (assuming format: "id1/id2/id3")
+  const pathIds = folder.category.path.split('/').filter(Boolean);
+
+  // 3. Fetch all category names involved in that path
+  const categories = await prisma.category.findMany({
+    where: {
+      id: { in: pathIds }
+    },
+    select: {
+      id: true,
+      name: true
+    }
+  });
+
+  // 4. Map the IDs back to names in the correct order
+  const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+  const pathNames = pathIds.map(id => categoryMap.get(id) || "Unknown");
+
+  return NextResponse.json({
+    ...folder,
+    categoryPathNames: pathNames // Returns ["Electronics", "Computers", "Laptops"]
+  });
 }
 
 export async function DELETE(
@@ -91,6 +118,7 @@ export async function PATCH(
   let body: Partial<{
     date: string;
     name: string;
+    categoryId: string;
   }>;
 
   try {
@@ -103,7 +131,7 @@ export async function PATCH(
   }
 
   // allowed keys
-  const allowedKeys = ["date", "name"];
+  const allowedKeys = ["date", "name", "categoryId"];
   const updateData: Record<string, any> = {};
   for (const key of allowedKeys) {
     if (body[key as keyof typeof body] !== undefined) {
@@ -126,7 +154,8 @@ export async function PATCH(
       where: { id },
       data: {
         date: new Date(updateData.date),
-        name: updateData.name
+        name: updateData.name,
+        categoryId: updateData.categoryId
       }
     })
 
@@ -134,6 +163,9 @@ export async function PATCH(
   } catch (error: any) {
     if (error.code === "P2025") {
       return NextResponse.json({ message: "Not found" }, { status: 404 });
+    }
+    if (error.code === "P2003" && !body.categoryId) {
+      return NextResponse.json({ message: "category not provided" }, { status: 404 });
     }
     console.log(error)
     return NextResponse.json(

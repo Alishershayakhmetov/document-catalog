@@ -1,76 +1,90 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Paperclip, ChevronRight, Folder, FolderOpen } from "lucide-react";
+import { Folder, ChevronRight, LayoutGrid } from "lucide-react";
 import { FolderResponse } from "@/hooks/folder";
+import { CatalogTreeResponse, useCatalogTree } from "@/hooks/catalog";
 import { formatDate } from "@/utils/dateUtils";
 import { useState } from "react";
 
-type PathSegment = {
-  id: string;
-  name: string | null | undefined;
-};
-
 type TreeNode = {
-  id: string; // category id
+  id: string;
   name: string;
   folders: FolderResponse[];
   children: TreeNode[];
 };
 
+/**
+ * Builds a TreeNode tree from the flat CatalogItem list returned by
+ * useCatalogTree(). Uses parentId to wire up relationships, then
+ * attaches FolderResponse items by matching folder.category?.id.
+ * All categories are included — even empty ones.
+ */
+function buildCatalogTree(
+  items: CatalogTreeResponse[],
+  foldersByCategory: Map<string, FolderResponse[]>,
+): TreeNode[] {
+  const nodeMap = new Map<string, TreeNode>();
+
+  // First pass: create every node
+  for (const item of items) {
+    nodeMap.set(item.id, {
+      id: item.id,
+      name: item.name,
+      folders: foldersByCategory.get(item.id) ?? [],
+      children: [],
+    });
+  }
+
+  // Second pass: wire parent → child
+  const childIds = new Set<string>();
+  for (const item of items) {
+    if (item.parent?.id && nodeMap.has(item.parent?.id)) {
+      const parent = nodeMap.get(item.parent?.id)!;
+      const child  = nodeMap.get(item.id)!;
+      if (!parent.children.some((c) => c.id === child.id)) {
+        parent.children.push(child);
+        childIds.add(child.id);
+      }
+    }
+  }
+
+  // Root nodes = not a child of anything
+  return [...nodeMap.values()].filter((n) => !childIds.has(n.id));
+}
 
 /**
- * Builds a category tree from a flat folder list.
- * Each folder has:
- *   folder.category  → { id, name }
- *   folder.path      → PathSegment[]  (ancestor chain, root → leaf)
- *
- * It reconstructs the hierarchy purely from `folder.path` so the UI mirrors
- * the real category tree even without a separate categories endpoint.
+ * Fallback: builds a tree purely from folder.path (ancestor chain) when the
+ * catalog hasn't loaded yet or errored out.
  */
-function buildTree(folders: FolderResponse[]): TreeNode[] {
+function buildTreeFromFolders(folders: FolderResponse[]): TreeNode[] {
   const nodeMap = new Map<string, TreeNode>();
 
   const getOrCreate = (id: string, name: string): TreeNode => {
-    if (!nodeMap.has(id)) {
-      nodeMap.set(id, { id, name, folders: [], children: [] });
-    }
+    if (!nodeMap.has(id)) nodeMap.set(id, { id, name, folders: [], children: [] });
     return nodeMap.get(id)!;
   };
 
   for (const folder of folders) {
-    const path: PathSegment[] = folder.path ?? [];
+    const path = folder.path ?? [];
 
     if (path.length === 0) {
-      // No category — dump into a virtual uncategorised bucket
-      const bucket = getOrCreate("__uncategorized__", "Без категории");
-      bucket.folders.push(folder);
+      getOrCreate("__uncategorized__", "Без категории").folders.push(folder);
       continue;
     }
 
-    // Ensure every node in the path exists
-    for (let i = 0; i < path.length; i++) {
-      const seg = path[i];
-      getOrCreate(seg.id, seg.name ?? seg.id);
-    }
+    for (const seg of path) getOrCreate(seg.id, seg.name ?? seg.id);
 
-    // Wire parent → child relationships
     for (let i = 1; i < path.length; i++) {
       const parent = nodeMap.get(path[i - 1].id)!;
       const child  = nodeMap.get(path[i].id)!;
-      if (!parent.children.some((c) => c.id === child.id)) {
-        parent.children.push(child);
-      }
+      if (!parent.children.some((c) => c.id === child.id)) parent.children.push(child);
     }
 
-    // Attach the folder to its leaf node
     const leaf = nodeMap.get(path[path.length - 1].id)!;
-    if (!leaf.folders.some((f) => f.id === folder.id)) {
-      leaf.folders.push(folder);
-    }
+    if (!leaf.folders.some((f) => f.id === folder.id)) leaf.folders.push(folder);
   }
 
-  // Root nodes = nodes that are not a child of any other node
   const childIds = new Set<string>();
   for (const node of nodeMap.values()) {
     for (const child of node.children) childIds.add(child.id);
@@ -79,10 +93,18 @@ function buildTree(folders: FolderResponse[]): TreeNode[] {
   return [...nodeMap.values()].filter((n) => !childIds.has(n.id));
 }
 
+// ─── Count helpers ────────────────────────────────────────────────────────────
+
+function countFolders(node: TreeNode): number {
+  return node.folders.length + node.children.reduce((sum, c) => sum + countFolders(c), 0);
+}
+
+// ─── FolderRow ────────────────────────────────────────────────────────────────
+
 function FolderRow({ folder, depth }: { folder: FolderResponse; depth: number }) {
   const router = useRouter();
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleClick = () => {
     if (window.getSelection()?.toString()) return;
     router.push(`/folder/${folder.id}`);
   };
@@ -94,7 +116,7 @@ function FolderRow({ folder, depth }: { folder: FolderResponse; depth: number })
       className="group cursor-pointer grid grid-cols-1 gap-3 pr-5 py-3 transition hover:bg-gray-50 md:grid-cols-12 md:items-center border-t border-gray-100 first:border-t-0"
     >
       <div className="md:col-span-8 flex items-center gap-2">
-        <Paperclip className="h-3.5 w-3.5 shrink-0 text-gray-300" />
+        <Folder className="h-3.5 w-3.5 shrink-0 text-gray-300" />
         <p className="select-text text-sm text-gray-800">{folder.name}</p>
       </div>
 
@@ -104,7 +126,7 @@ function FolderRow({ folder, depth }: { folder: FolderResponse; depth: number })
 
       <div className="md:col-span-2">
         <div className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs text-gray-600">
-          <Paperclip className="h-3 w-3" />
+          <Folder className="h-3 w-3" />
           {folder.fileCount} Файл
         </div>
       </div>
@@ -112,9 +134,13 @@ function FolderRow({ folder, depth }: { folder: FolderResponse; depth: number })
   );
 }
 
+// ─── CategoryNode (recursive) ─────────────────────────────────────────────────
 
-// Category node (recursive)
-function CategoryNode({ node, depth = 0, defaultOpen = false }: {
+function CategoryNode({
+  node,
+  depth = 0,
+  defaultOpen = false,
+}: {
   node: TreeNode;
   depth?: number;
   defaultOpen?: boolean;
@@ -126,7 +152,6 @@ function CategoryNode({ node, depth = 0, defaultOpen = false }: {
 
   return (
     <div>
-      {/* Category header */}
       <button
         type="button"
         onClick={() => setIsOpen((v) => !v)}
@@ -140,10 +165,7 @@ function CategoryNode({ node, depth = 0, defaultOpen = false }: {
           } ${!hasContent ? "opacity-0" : ""}`}
         />
 
-        {isOpen
-          ? <FolderOpen className="h-4 w-4 shrink-0 text-amber-400" />
-          : <Folder className="h-4 w-4 shrink-0 text-amber-400" />
-        }
+        <LayoutGrid className="h-4 w-4 shrink-0 text-amber-400" />
 
         <span className="text-sm font-semibold text-gray-700 flex-1 truncate">
           {node.name}
@@ -156,15 +178,11 @@ function CategoryNode({ node, depth = 0, defaultOpen = false }: {
         )}
       </button>
 
-      {/* Expanded content */}
       {isOpen && (
         <div>
-          {/* Child categories first */}
           {node.children.map((child) => (
             <CategoryNode key={child.id} node={child} depth={depth + 1} />
           ))}
-
-          {/* Folders in this category */}
           {node.folders.map((folder) => (
             <FolderRow key={folder.id} folder={folder} depth={depth + 1} />
           ))}
@@ -174,13 +192,25 @@ function CategoryNode({ node, depth = 0, defaultOpen = false }: {
   );
 }
 
-// Count all folders in a node and its descendants
-function countFolders(node: TreeNode): number {
-  return node.folders.length + node.children.reduce((sum, c) => sum + countFolders(c), 0);
-}
+// ─── FolderList (root export) ─────────────────────────────────────────────────
 
 export default function FolderList({ folders }: { folders: FolderResponse[] }) {
-  const tree = buildTree(folders);
+  const { data: catalogData, isLoading: isCatalogsLoading, isError } = useCatalogTree();
+
+  // Index folders by category id for O(1) lookup during tree build
+  const foldersByCategory = new Map<string, FolderResponse[]>();
+  for (const folder of folders) {
+    const catId = folder.path[folder.path.length - 1].id ?? "__uncategorized__";
+    if (!foldersByCategory.has(catId)) foldersByCategory.set(catId, []);
+    foldersByCategory.get(catId)!.push(folder);
+  }
+
+  // Use catalog tree when available (shows all categories, including empty ones);
+  // fall back to folder-derived tree while loading or on error.
+  const tree: TreeNode[] =
+    isCatalogsLoading || isError || !catalogData
+      ? buildTreeFromFolders(folders)
+      : buildCatalogTree(catalogData, foldersByCategory);
 
   if (tree.length === 0) return null;
 

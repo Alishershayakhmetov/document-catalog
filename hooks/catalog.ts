@@ -128,6 +128,7 @@ export function useEditCategory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catalog-tree"] });
+      queryClient.invalidateQueries({ queryKey: ['folders'] })
     },
   });
 }

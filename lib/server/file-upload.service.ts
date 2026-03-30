@@ -32,37 +32,58 @@ export async function saveFilesToFolder(params: {
 
   const folderDir = await ensureFolderDirectory(folderId);
 
-  const createdFiles = [];
+  const writtenPaths: string[] = [];
+  const createdFileIds: string[] = [];
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const metadata = filesMetadata[i];
+  try {
+    const createdFiles = [];
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const ext = path.extname(file.name);
-    const storedName = `${crypto.randomUUID()}${ext}`;
-    const filePath = path.join(folderDir, storedName);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const metadata = filesMetadata[i];
 
-    await fs.writeFile(filePath, buffer);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const ext = path.extname(file.name);
+      const storedName = `${crypto.randomUUID()}${ext}`;
+      const filePath = path.join(folderDir, storedName);
 
-    const createdFile = await prisma.file.create({
-      data: {
-        folderId,
-        originalFilename: file.name,
-        storedFilename: storedName,
-        mimeType: file.type,
-        fileSize: file.size,
-				date: metadata.date ? new Date(metadata.date) : new Date(),
-        systemName: metadata.systemName || file.name,
-        physicalLocation: metadata.physicalLocation || null,
-        description: metadata.description 
-      },
-    });
+      await fs.writeFile(filePath, buffer);
+      writtenPaths.push(filePath); // track before DB write
 
-    createdFiles.push(createdFile);
+      const createdFile = await prisma.file.create({
+        data: {
+          folderId,
+          originalFilename: file.name,
+          storedFilename: storedName,
+          mimeType: file.type,
+          fileSize: file.size,
+          date: metadata.date ? new Date(metadata.date) : new Date(),
+          systemName: metadata.systemName || file.name,
+          physicalLocation: metadata.physicalLocation || null,
+          description: metadata.description,
+        },
+      });
+      createdFileIds.push(createdFile.id); // track before next iteration
+
+      createdFiles.push(createdFile);
+    }
+
+    return createdFiles;
+  } catch (error) {
+    // Roll back filesystem writes
+    await Promise.allSettled(
+      writtenPaths.map((p) => fs.unlink(p).catch(() => {}))
+    );
+
+    // Roll back DB records
+    if (createdFileIds.length > 0) {
+      await prisma.file.deleteMany({
+        where: { id: { in: createdFileIds } },
+      }).catch(() => {});
+    }
+
+    throw error; // re-throw so the POST handler returns 500
   }
-
-  return createdFiles;
 }
 
 export function parseFilesFormData(formData: FormData) {

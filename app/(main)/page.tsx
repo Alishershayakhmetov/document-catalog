@@ -9,6 +9,7 @@ import FilterFolderModal from "@/features/main/filterFolderModal";
 import { useDebounce } from "@/hooks/debounce";
 import { SelectedFileItem } from "@/shared/types/global";
 import SearchResultList from "@/features/main/render_search_list";
+import ManageCategoriesModal from "@/features/main/manageCategoriesModal";
 
 const debounce_time = 300;
 
@@ -55,6 +56,7 @@ export default function FoldersPage() {
 
   const [isAddFolderModalOpen, setIsAddFolderModalOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isManageCategoryModalOpen, setIsManageCategoryModalOpen] = useState(false);
 
   const openModal = () => setIsAddFolderModalOpen(true);
 
@@ -105,9 +107,10 @@ export default function FoldersPage() {
                 <button
                   type="button"
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:flex-none"
+                  onClick={() => setIsManageCategoryModalOpen(true)}
                 >
                   <ArrowUpDown className="h-4 w-4" />
-                  Сортировка
+                  Создание<br/>Категорий 
                 </button>
               </div>
             </div>
@@ -129,7 +132,7 @@ export default function FoldersPage() {
               {hasSearch ? (
                 <>
                   <div className="col-span-3">Файл</div>
-                  <div className="col-span-3">Описания</div>
+                  <div className="col-span-3">Описание</div>
                   <div className="col-span-3">Папка</div>
                   <div className="col-span-1">Дата</div>
                   <div className="col-span-1">Размер</div>
@@ -151,7 +154,7 @@ export default function FoldersPage() {
             ) : !isEmpty ? (
               hasSearch
                 ? <SearchResultList results={searchResults} />
-                : <FolderList folders={folders} />
+                : <FolderList folders={filteredFolders} />
             ) : (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                 <p className="text-lg font-semibold text-gray-900">
@@ -185,7 +188,12 @@ export default function FoldersPage() {
         handleFilterFolders={handleFilterFolders}
         isPending={isLoading}
       />}
-      
+
+      {isManageCategoryModalOpen &&
+        <ManageCategoriesModal 
+          onClose={() => setIsManageCategoryModalOpen(false)}
+        />
+      }
     </div>
   );
 }

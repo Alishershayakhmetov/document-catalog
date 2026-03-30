@@ -34,7 +34,7 @@ export default function EditFileModal({
 				<form onSubmit={handleEditFile} className="space-y-4">
 					<div>
 						<label className="mb-2 block text-sm font-medium text-gray-700">
-							Описания
+							Описание (Наименование)
 						</label>
 						<input
 							type="text"

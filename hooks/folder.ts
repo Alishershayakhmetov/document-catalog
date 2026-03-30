@@ -6,7 +6,9 @@ export type FolderData = {
   id: string;
   name: string;
   date: string;
-  files: FileCardInfo[]
+  files: FileCardInfo[];
+  category: { path: string };
+  categoryPathNames: string[]
 }
 
 export type UseFoldersParams = {
@@ -68,6 +70,7 @@ async function fetchFolders(filters: UseFoldersParams) : Promise<FolderResponse[
 export const useFolders = (params: UseFoldersParams) => {
   return useQuery({
     queryKey: ["folders", params],
+    // queryKey: ["folders"],
     queryFn: () => fetchFolders(params),
     enabled: !params.search || params.search.length >= 2
   });
@@ -153,7 +156,7 @@ export const useUpdateFolder = () => {
 
   return useMutation({
     // 1. The actual backend call
-    mutationFn: async (updatedFields: {id: string, name: string, date: string}) => {
+    mutationFn: async (updatedFields: {id: string, name: string, date: string, categoryId: string}) => {
       const res = await fetch(`/api/folder/${updatedFields.id}`, {
         method: 'PATCH',
         body: JSON.stringify(updatedFields),
@@ -187,6 +190,8 @@ export const useUpdateFolder = () => {
     // 4. Final sync (refetch to ensure we are in sync with server)
     onSettled: (any, error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['folderById', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['catalog-tree']})
+      queryClient.invalidateQueries({ queryKey: ['folders'] })
     },
   });
 };
