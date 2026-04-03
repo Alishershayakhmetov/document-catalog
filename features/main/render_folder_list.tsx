@@ -6,6 +6,7 @@ import { FolderResponse } from "@/hooks/folder";
 import { CatalogTreeResponse, useCatalogTree } from "@/hooks/catalog";
 import { formatDate } from "@/utils/dateUtils";
 import { useState } from "react";
+import { pluralize } from "@/utils/pluralWord";
 
 type TreeNode = {
   id: string;
@@ -127,7 +128,7 @@ function FolderRow({ folder, depth }: { folder: FolderResponse; depth: number })
       <div className="md:col-span-2">
         <div className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs text-gray-600">
           <Folder className="h-3 w-3" />
-          {folder.fileCount} Файл
+          {pluralize(folder.fileCount, ['Файл', 'Файла', 'Файлов'])}
         </div>
       </div>
     </div>
@@ -140,24 +141,39 @@ function CategoryNode({
   node,
   depth = 0,
   defaultOpen = false,
+  ancestorPath = [],
+  onCategoryClick,
 }: {
   node: TreeNode;
   depth?: number;
   defaultOpen?: boolean;
+  /** IDs of all ancestors above this node (root → parent). */
+  ancestorPath?: string[];
+  /** Called with the full path of IDs from root down to the clicked node. */
+  onCategoryClick?: (path: string[]) => void;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   const totalFolders = countFolders(node);
   const hasContent = node.folders.length > 0 || node.children.length > 0;
 
+  /** Full path from root to this node. */
+  const nodePath = [...ancestorPath, node.id];
+
+  const handleClick = () => {
+    console.log("qwertyui")
+    setIsOpen((v) => !v);
+    onCategoryClick?.(nodePath);
+  };
+
   return (
     <div>
       <button
         type="button"
-        onClick={() => setIsOpen((v) => !v)}
+        onClick={handleClick}
         style={{ paddingLeft: `${depth * 24 + 12}px` }}
         className="w-full flex items-center gap-2.5 pr-4 py-2.5 text-left transition hover:bg-gray-50 group"
-        disabled={!hasContent}
+        // disabled={!hasContent}
       >
         <ChevronRight
           className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${
@@ -173,7 +189,7 @@ function CategoryNode({
 
         {totalFolders > 0 && (
           <span className="text-xs text-gray-400 shrink-0">
-            {totalFolders} папк{totalFolders === 1 ? "а" : totalFolders < 5 ? "и" : ""}
+            {pluralize(totalFolders, ['папка', 'папки', 'папок'])}
           </span>
         )}
       </button>
@@ -181,7 +197,13 @@ function CategoryNode({
       {isOpen && (
         <div>
           {node.children.map((child) => (
-            <CategoryNode key={child.id} node={child} depth={depth + 1} />
+            <CategoryNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              ancestorPath={nodePath}
+              onCategoryClick={onCategoryClick}
+            />
           ))}
           {node.folders.map((folder) => (
             <FolderRow key={folder.id} folder={folder} depth={depth + 1} />
@@ -194,7 +216,15 @@ function CategoryNode({
 
 // ─── FolderList (root export) ─────────────────────────────────────────────────
 
-export default function FolderList({ folders }: { folders: FolderResponse[] }) {
+export default function FolderList({
+  folders,
+  onCategoryClick,
+}: {
+  folders: FolderResponse[];
+  /** Bubbles up the full ID path (root → clicked node) so the parent can
+   *  pre-select categories when opening the Create Folder modal. */
+  onCategoryClick?: (path: string[]) => void;
+}) {
   const { data: catalogData, isLoading: isCatalogsLoading, isError } = useCatalogTree();
 
   // Index folders by category id for O(1) lookup during tree build
@@ -217,7 +247,13 @@ export default function FolderList({ folders }: { folders: FolderResponse[] }) {
   return (
     <div className="divide-y divide-gray-100">
       {tree.map((node) => (
-        <CategoryNode key={node.id} node={node} depth={0} defaultOpen={tree.length === 1} />
+        <CategoryNode
+          key={node.id}
+          node={node}
+          depth={0}
+          defaultOpen={tree.length === 1}
+          onCategoryClick={onCategoryClick}
+        />
       ))}
     </div>
   );

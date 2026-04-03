@@ -73,61 +73,60 @@ export default function FileUploadFields({
             {selectedFiles.map((item, index) => (
               <div key={`${item.file.name}-${index}`} className="space-y-2">
                 <div>
-									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Имя Файла
-									</label>
-									<input
-										type="text"
-										value={item.file.name}
-                    disabled
-										className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
-                  />
+					<label className="mb-2 block text-sm font-medium text-gray-700">
+						Имя Файла
+					</label>
+					<input
+						type="text"
+						value={item.file.name}
+                    	disabled
+						className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                	/>
                 </div>
 
                 <div>
-									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Описание (Наименование)
-									</label>
-									<input
-										type="text"
-										value={item.description || "" }
-										onChange={(e) =>
-											handleDescriptionChange(index, e.target.value)
-										}
-										placeholder="Введите описание"
-										className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
-                    style={{ backgroundColor: '#ffffff' }}
-                  />
+					<label className="mb-2 block text-sm font-medium text-gray-700">
+						Описание (Наименование) Файла
+					</label>
+					<input
+						type="text"
+						value={item.description || "" }
+						onChange={(e) =>
+							handleDescriptionChange(index, e.target.value)
+						}
+						placeholder="Введите описание"
+						required
+						className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+                    	style={{ backgroundColor: '#ffffff' }}
+                	/>
                 </div>
-
-								<div>
-									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Местонахождения
-									</label>
-									<input
-										type="text"
-										placeholder="Введите местонахождения"
-										value={item.physicalLocation}
-										onChange={(e) =>
-											handlePhysicalLocationChange(index, e.target.value)
-										}
-										className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400"
-									/>
-								</div>
-
-								<div>
-									<label className="mb-2 block text-sm font-medium text-gray-700">
-										Дата
-									</label>
-									<input
-										type="date"
-										value={item.date}
-										onChange={(e) =>
-											handleDateChange(index, e.target.value)
-										}
-										className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400"
-										required
-									/>
+				<div>
+					<label className="mb-2 block text-sm font-medium text-gray-700">
+						Местонахождения
+					</label>
+					<input
+						type="text"
+						placeholder="Введите местонахождения"
+						value={item.physicalLocation}
+						onChange={(e) =>
+							handlePhysicalLocationChange(index, e.target.value)
+						}
+						className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400"
+					/>
+				</div>
+				<div>
+					<label className="mb-2 block text-sm font-medium text-gray-700">
+						Дата
+					</label>
+					<input
+						type="date"
+						value={item.date}
+						onChange={(e) =>
+							handleDateChange(index, new Date().toISOString().split('T')[0]) // pass current day, not the file edit data (e.target.value)
+						}
+						className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-gray-400"
+						required
+					/>
                 </div>
 
                 <div className="py-4">

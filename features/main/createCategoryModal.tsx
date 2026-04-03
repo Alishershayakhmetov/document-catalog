@@ -3,7 +3,6 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useAddCategory } from "@/hooks/catalog";
-import { catalogNames } from "./constant";
 
 type Props = {
   parentId: string | null,
@@ -67,7 +66,7 @@ export default function CreateCategoryModal({
 									type="text"
 									value={newCategoryInput}
 									onChange={(e) => setNewCategoryInput(e.target.value)}
-									placeholder={`Введите катаегорию`}
+									placeholder={`Введите категорию`}
 									className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 placeholder:text-gray-400"
 									required
 								/>

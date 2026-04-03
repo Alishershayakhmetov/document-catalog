@@ -11,7 +11,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  // 1. Fetch the folder and its specific category path
+  // Fetch the folder and its specific category path
   const folder = await prisma.folder.findUnique({
     where: { id },
     select: {
@@ -25,6 +25,9 @@ export async function GET(
           systemName: true,
           physicalLocation: true,
           description: true
+        },
+        orderBy: {
+          updatedAt: "desc"
         }
       },
       category: {
@@ -39,10 +42,9 @@ export async function GET(
     return NextResponse.json({ message: "Not found" }, { status: 404 });
   }
 
-  // 2. Extract IDs from the path (assuming format: "id1/id2/id3")
   const pathIds = folder.category.path.split('/').filter(Boolean);
 
-  // 3. Fetch all category names involved in that path
+  // Fetch all category names involved in that path
   const categories = await prisma.category.findMany({
     where: {
       id: { in: pathIds }
@@ -53,13 +55,13 @@ export async function GET(
     }
   });
 
-  // 4. Map the IDs back to names in the correct order
+  // Map the IDs back to names in the correct order
   const categoryMap = new Map(categories.map(c => [c.id, c.name]));
   const pathNames = pathIds.map(id => categoryMap.get(id) || "Unknown");
 
   return NextResponse.json({
     ...folder,
-    categoryPathNames: pathNames // Returns ["Electronics", "Computers", "Laptops"]
+    categoryPathNames: pathNames
   });
 }
 
@@ -83,7 +85,7 @@ export async function DELETE(
       return NextResponse.json({ message: "Folder not found" }, { status: 404 });
     }
 
-    // 2. Guard clause: If files exist, block the deletion
+    // If files exist, block the deletion
     if (folder._count.files > 0) {
       return NextResponse.json(
         { message: "Cannot delete folder: It still contains files." },

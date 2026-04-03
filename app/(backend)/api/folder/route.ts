@@ -4,74 +4,12 @@ import {
   parseFilesFormData,
   saveFilesToFolder,
 } from "@/lib/server/file-upload.service";
-/*
-export async function GET(request: NextRequest) {
-  try {
-    const folders = await prisma.folder.findMany({
-      include: {
-        files: true,
-        category: true
-      },
-      orderBy: { createdAt: "desc" }
-    });
-
-    // Fetch all categories
-    const allCategories = await prisma.category.findMany({
-      select: { id: true, name: true }
-    });
-
-    const categoryMap = new Map(
-      allCategories.map(c => [c.id, c])
-    );
-
-    // Build result
-    const result = folders.map(folder => {
-      const ids = folder.category.path.split("/").filter(Boolean);
-
-      const fullPath = ids
-        .map(id => categoryMap.get(id)?.name)
-        .filter(Boolean)
-        .join(" / ");
-
-      return {
-        id: folder.id,
-        name: folder.name,
-        date: folder.date,
-        fileCount: folder.files.length,
-        fullPath,
-
-        // category for the folder
-        category: {
-          id: folder.category.id,
-          name: folder.category.name
-        },
-
-        // full hierarchy
-        path: ids.map(id => ({
-          id,
-          name: categoryMap.get(id)?.name
-        })),
-
-      };
-    });
-
-    return NextResponse.json({ folders: result }, { status: 200 });
-
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Failed to fetch folders" },
-      { status: 500 }
-    );
-  }
-}
-*/
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryIds = searchParams.getAll("categoryIds");
-    console.log(categoryIds)
+    
     // Build category filter only when IDs are provided
     let categoryFilter = {};
 
@@ -226,41 +164,46 @@ async function categorySanityCheck(categoryIds: string[]): Promise<SanityCheckRe
     where: { id: { in: categoryIds } }
   });
 
-  // 1. Check all IDs exist
   if (categories.length !== categoryIds.length) {
     return { success: false, error: "Some categories not found", status: 404 };
   }
 
-  // 2. Build map
   const map = new Map(categories.map(c => [c.id, c]));
 
-  // 3. Validate chain
+  // Validate chain
   for (const category of categories) {
     if (category.parentId && !map.has(category.parentId)) {
       return { success: false, error: "Category hierarchy is broken", status: 409 };
     }
   }
 
-  // sort categories by depth (or build chain manually)
-  const root = categories.find(c => c.parentId === null);
-
+  // Find root (the category whose parent is not part of this set)
+  const root = categories.find(c => c.parentId === null || !map.has(c.parentId!));
   if (!root) {
     return { success: false, error: "Missing root category", status: 400 };
   }
 
+  // Walk the actual parent -> child chain from root, recording the real order
+  const orderedChain: string[] = [];
   let current = root;
-
+ 
   while (true) {
+    orderedChain.push(current.id);
     const child = categories.find(c => c.parentId === current.id);
-
     if (!child) break;
-
     current = child;
   }
 
-  // ensure all categories were used
-  if (current.id !== categories[categories.length - 1].id) {
+  // Every category must have been visited - detects gaps, forks, or cycles
+  if (orderedChain.length !== categories.length) {
     return { success: false, error: "Invalid category chain", status: 409 };
+  }
+
+  // The submitted order must match the real hierarchy order exactly.
+  for (let i = 0; i < categoryIds.length; i++) {
+    if (categoryIds[i] !== orderedChain[i]) {
+      return { success: false, error: "Category chain order is invalid", status: 409 };
+    }
   }
 
   return { success: true, data: current };

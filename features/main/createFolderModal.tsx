@@ -15,16 +15,27 @@ type Props = {
     files: SelectedFileItem[];
   }) => void;
   isPending?: boolean;
+  /**
+   * Pre-selected category path (array of IDs from root → leaf) that was
+   * last clicked in the folder tree. When provided the modal will
+   * auto-populate all category dropdown levels on open.
+   */
+  initialCategoryPath?: string[];
 };
 
 export default function CreateFolderModal({
   onClose,
   onSubmit,
   isPending = false,
+  initialCategoryPath = [],
 }: Props) {
   const [folderName, setFolderName] = useState("");
-  const [folderDate, setFolderDate] = useState("");
-  const [selectedPath, setSelectedPath] = useState<string[]>([]);
+  const [folderDate, setFolderDate] = useState(new Date().toISOString().split('T')[0]);
+  /**
+   * Initialise selectedPath from the prop so the dropdowns are pre-filled
+   * when the user has previously clicked a category in the tree.
+   */
+  const [selectedPath, setSelectedPath] = useState<string[]>(initialCategoryPath);
   const [selectedFiles, setSelectedFiles] = useState<SelectedFileItem[]>([]);
 
   const { data, isLoading, isError } = useCatalogTree();
@@ -83,7 +94,7 @@ export default function CreateFolderModal({
     onSubmit({
       folderName,
       folderDate,
-      categoryIds: selectedPath, // single ID — the deepest selected node
+      categoryIds: selectedPath, // full path of selected IDs
       files: selectedFiles,
     });
 

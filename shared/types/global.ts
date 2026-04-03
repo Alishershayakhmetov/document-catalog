@@ -16,13 +16,13 @@ export type FileCardInfo = {
   id: string,
   date: string | null,
   systemName: string | null,
-  physicalLocation: string | null,
+  physicalLocation: string | null | undefined,
   description: string | null,
 }
 
 export type FileCardInfoState = {
   date: string | null,
   systemName: string | null,
-  physicalLocation: string | null,
+  physicalLocation: string | null | undefined,
   description: string | null,
 }

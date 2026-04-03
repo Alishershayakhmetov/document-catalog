@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
+import { Plus, Search, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
 import { useFolders, useCreateFolder, useSearch } from "@/hooks/folder";
 import FolderList from "@/features/main/render_folder_list";
 import CreateFolderModal from "@/features/main/createFolderModal";
@@ -36,9 +36,6 @@ export default function FoldersPage() {
   const { data: folders = [], isLoading: isFoldersLoading, error: foldersError } = useFolders(queryParams);
   const { data: searchResults = [], isLoading: isSearchLoading, error: searchError } = useSearch(debouncedSearch.trim());
 
-  // const isLoading = isFoldersLoading || (hasSearch && isSearchLoading);
-  // const isTyping = searchInput !== debouncedSearch;
-
   const isLoading = hasSearch ? isSearchLoading : isFoldersLoading;
   const error = hasSearch ? searchError : foldersError;
   const isTyping = searchInput !== debouncedSearch;
@@ -58,7 +55,18 @@ export default function FoldersPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isManageCategoryModalOpen, setIsManageCategoryModalOpen] = useState(false);
 
-  const openModal = () => setIsAddFolderModalOpen(true);
+  /**
+   * Stores the category path (array of IDs root → leaf) that the user last
+   * clicked in the folder tree. Passed to CreateFolderModal so it can
+   * pre-select the matching category dropdowns automatically.
+   */
+  const [lastClickedCategoryPath, setLastClickedCategoryPath] = useState<string[]>([]);
+
+  /** Opens the "New Folder" modal, optionally with a pre-selected category path. */
+  const openModal = (preselectedPath?: string[]) => {
+    if (preselectedPath) setLastClickedCategoryPath(preselectedPath);
+    setIsAddFolderModalOpen(true);
+  };
 
   const handleCreateFolder = (data: {
     folderName: string;
@@ -83,15 +91,29 @@ export default function FoldersPage() {
           {/* ── Toolbar ── */}
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex w-full flex-col items-center gap-3 sm:flex-row">
-              <div className="relative w-full max-w-xl">
+              <div className="relative w-full max-w-xl flex items-center">
+                {/* Search Icon (Left) */}
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+
+                {/* Input Field */}
                 <input
                   type="text"
                   placeholder="Поиск Папок..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-gray-400 text-gray-700"
+                  className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-10 text-sm outline-none transition focus:border-gray-400 text-gray-700"
                 />
+
+                {/* Clear Button (Inside Right) */}
+                {searchInput && (
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                    onClick={() => setSearchInput("")}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
 
               <div className="flex w-full items-center gap-3 sm:w-auto">
@@ -116,7 +138,7 @@ export default function FoldersPage() {
             </div>
 
             <button
-              onClick={openModal}
+              onClick={() => openModal()}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90"
             >
               <Plus className="h-5 w-5" />
@@ -126,8 +148,7 @@ export default function FoldersPage() {
 
           {/* ── Table ── */}
           <div className="overflow-hidden rounded-2xl border border-gray-200">
-            {/* Header row — only visible on md+ 
-            // table header — update columns conditionally */}
+            {/* Header row — only visible on md+ */}
             <div className="hidden grid-cols-12 gap-4 border-b border-gray-200 bg-gray-50 px-5 py-3 text-sm font-semibold text-gray-600 md:grid">
               {hasSearch ? (
                 <>
@@ -154,7 +175,12 @@ export default function FoldersPage() {
             ) : !isEmpty ? (
               hasSearch
                 ? <SearchResultList results={searchResults} />
-                : <FolderList folders={filteredFolders} />
+                : (
+                  <FolderList
+                    folders={filteredFolders}
+                    onCategoryClick={(path) => setLastClickedCategoryPath(path)}
+                  />
+                )
             ) : (
               <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
                 <p className="text-lg font-semibold text-gray-900">
@@ -163,7 +189,7 @@ export default function FoldersPage() {
                 {!hasSearch && isParamEmpty && (
                   <div>
                     <p className="mt-2 text-sm text-gray-500">Создайте свою первую папку</p>
-                    <button onClick={openModal} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90">
+                    <button onClick={() => openModal()} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90">
                       <Plus className="h-5 w-5" />
                       Создать Папку
                     </button>
@@ -180,6 +206,7 @@ export default function FoldersPage() {
         onClose={() => setIsAddFolderModalOpen(false)}
         onSubmit={handleCreateFolder}
         isPending={createFolderMutation.isPending}
+        initialCategoryPath={lastClickedCategoryPath}
       />}      
 
       {isFilterOpen && 

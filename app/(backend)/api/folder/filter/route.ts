@@ -6,18 +6,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const categoryIds: string[] = body.categoryIds || [];
 
-    // 1. Get selected categories
     const categories = await prisma.category.findMany({
       where: { id: { in: categoryIds } },
       select: { path: true, name: true, id: true }
     });
 
-    // 2. Build subtree filters
+    // Build subtree filters
     const pathFilters = categories.map(cat => ({
       path: { startsWith: cat.path }
     }));
 
-    // 3. Fetch folders
+    // Fetch folders
     const folders = await prisma.folder.findMany({
       where: {
         category: {
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
       orderBy: { createdAt: "desc" }
     });
 
-    // 4. Collect all category IDs
+    // Collect all category IDs
     const allCategoryIds = new Set<string>();
     folders.forEach(folder => {
       folder.category.path.split("/").forEach(id => {
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    // 5. Fetch all categories
+    // Fetch all categories
     const allCategories = await prisma.category.findMany({
       where: { id: { in: Array.from(allCategoryIds) } },
       select: { id: true, name: true }
@@ -49,7 +48,7 @@ export async function POST(request: NextRequest) {
       allCategories.map(c => [c.id, c])
     );
 
-    // 6. Build result
+    // Build result
     const result = folders.map(folder => {
       const ids = folder.category.path.split("/").filter(Boolean);
 

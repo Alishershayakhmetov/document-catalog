@@ -21,6 +21,7 @@ import FileCard from "@/features/folder/fileCard";
 import FileUploadFields from "@/features/shared/fileUploadFields";
 import { FileCardInfo, FileCardInfoState, SelectedFileItem } from "@/shared/types/global";
 import { CatalogTreeResponse, useCatalogTree } from "@/hooks/catalog";
+import { pluralize } from "@/utils/pluralWord";
 
 const emptyForm: FileCardInfoState = {
   systemName: "",
@@ -176,8 +177,7 @@ export default function FolderDetailsPage() {
 
     if (
       !(editForm.systemName && editForm.systemName.trim()) ||
-      !editForm.date ||
-      !(editForm.physicalLocation && editForm.physicalLocation.trim())
+      !editForm.date
     ) {
       return;
     }
@@ -189,7 +189,7 @@ export default function FolderDetailsPage() {
           id: editingFileId,
           systemName: editForm.systemName.trim(),
           date: editForm.date,
-          physicalLocation: editForm.physicalLocation.trim(),
+          physicalLocation: editForm.physicalLocation?.trim(),
           description: editForm.description,
         }
       },
@@ -355,7 +355,7 @@ export default function FolderDetailsPage() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Выбранные Файлы</h2>
               <div className="text-sm text-gray-500">
-                {files.length} file{files.length !== 1 ? "s" : ""}
+                {pluralize(files.length, ['Файл', 'Файла', 'Файлов'])}
               </div>
             </div>
 

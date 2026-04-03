@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📁 Система каталогизации документов
 
-## Getting Started
+Веб-приложение для управления документами: создание каталогов, папок и файлов с удобной навигацией.
 
-First, run the development server:
+## Стек технологий
+
+- **Next.js** (App Router) + **TypeScript**
+- **PostgreSQL** — база данных
+- **Prisma ORM** — работа с БД
+
+---
+
+## Требования
+
+Перед установкой убедитесь, что на сервере установлено:
+
+- [Node.js](https://nodejs.org/) v18 или выше
+- [PostgreSQL](https://www.postgresql.org/) v14 или выше
+- `git`
+
+---
+
+## Установка и запуск
+
+### 1. Клонирование репозитория
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <URL репозитория>
+cd <название папки проекта>
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Установка зависимостей
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Настройка переменных окружения
 
-## Learn More
+Создайте файл `.env` в корне проекта:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cp .env.example .env
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Откройте `.env` и заполните значения:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+# Строка подключения к PostgreSQL
+DATABASE_URL="postgresql://ПОЛЬЗОВАТЕЛЬ:ПАРОЛЬ@localhost:5432/ИМЯ_БД"
 
-## Deploy on Vercel
+# Строка директорий папки uploads
+UPLOAD_DIR="../uploads"
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. Создание базы данных
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Создайте базу данных в PostgreSQL:
+
+```bash
+psql -U postgres -c "CREATE DATABASE ИМЯ_БД;"
+```
+
+### 5. Применение миграций Prisma
+
+```bash
+npx prisma migrate deploy
+```
+
+Если запускаете впервые в разработке и хотите заодно сгенерировать клиент:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+### 6. Сборка проекта
+
+```bash
+npm run build
+```
+
+### 7. Запуск в продакшене
+
+```bash
+npm start
+```
+
+По умолчанию приложение запустится на порту **3000**.  
+Откройте в браузере: `http://localhost:3000`
+
+---
+
+## Структура данных
+
+```
+Каталог
+└── Папка
+    └── Файл
+```
+
+- **Каталог** — верхний уровень организации документов. Можно создавать и редактировать.
+- **Папка** — прикрепляется к каталогу, содержит файлы.
+- **Файл** — документ внутри папки.
+
+---
+
+## Полезные команды
+
+| Команда | Описание |
+|---|---|
+| `npm run dev` | Запуск в режиме разработки |
+| `npm run build` | Сборка для продакшена |
+| `npm start` | Запуск собранного приложения |
+| `npx prisma studio` | Визуальный редактор БД |
+| `npx prisma migrate dev` | Создание новой миграции (dev) |
+| `npx prisma migrate deploy` | Применение миграций (prod) |
+| `npx prisma generate` | Генерация Prisma Client |
+
+---
+
+## Обновление проекта
+
+При обновлении кода из репозитория:
+
+```bash
+git pull
+npm install
+npx prisma migrate deploy
+npm run build
+npm start
+```
+
+---
+
+## Решение проблем
+
+**Ошибка подключения к БД**  
+Проверьте строку `DATABASE_URL` в `.env` — пользователь, пароль и название БД должны совпадать с вашим PostgreSQL.
+
+**Ошибки TypeScript при сборке**  
+Запустите `npx prisma generate` — возможно, не сгенерирован Prisma Client.
+
+**Порт 3000 занят**  
+Запустите на другом порту:
+```bash
+PORT=8080 npm start
+```

@@ -34,7 +34,7 @@ export default function EditFileModal({
 				<form onSubmit={handleEditFile} className="space-y-4">
 					<div>
 						<label className="mb-2 block text-sm font-medium text-gray-700">
-							Описание (Наименование)
+							Описание (Наименование) Файла
 						</label>
 						<input
 							type="text"
@@ -42,6 +42,7 @@ export default function EditFileModal({
 							onChange={(e) =>
 								setEditForm((prev) => ({ ...prev, description: e.target.value }))
 							}
+							required
 							className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 text-gray-900 placeholder:text-gray-400 bg-white"
 						/>
 					</div>
@@ -75,7 +76,6 @@ export default function EditFileModal({
 								}))
 							}
 							className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-gray-400 text-gray-900 placeholder:text-gray-400 bg-white"
-							required
 						/>
 					</div>
 

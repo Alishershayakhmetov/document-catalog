@@ -3,7 +3,7 @@ import path from "path";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 
-export const UPLOAD_DIR = path.join("..", "uploads");
+export const UPLOAD_DIR = process.env.UPLOAD_DIR!;
 
 export type UploadedFileMetadata = {
   physicalLocation?: string | null;

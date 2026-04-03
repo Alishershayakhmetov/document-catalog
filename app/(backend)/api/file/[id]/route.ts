@@ -94,13 +94,13 @@ export async function PATCH(
 
 export async function POST(
   request: Request, 
-  { params }: { params : Promise<{folderId: string}> }
+  { params }: { params : Promise<{id: string}> }
 ) {
   try {
-    const { folderId } = await params;
+    const { id } = await params;
 
     const folder = await prisma.folder.findUnique({
-      where: { id: folderId },
+      where: { id: id },
     });
 
     if (!folder) {
@@ -115,7 +115,7 @@ export async function POST(
     }
 
     const createdFiles = await saveFilesToFolder({
-      folderId,
+      folderId: id,
       files,
       filesMetadata,
     });
