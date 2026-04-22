@@ -14,21 +14,6 @@ datasource db {
   url= env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  USER
-}
-
-model Users {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model Category {
   id        String   @id @default(cuid())
   name      String
@@ -65,8 +50,7 @@ model Folder {
 
 model File {
   id               String   @id @default(cuid())
-  originalFilename String
-  storedFilename   String   @unique
+  systemName String // Name on website
   mimeType         String?
   fileSize         Int
   uploadedAt       DateTime @default(now())
@@ -74,9 +58,10 @@ model File {
   folderId     String
   folderIdRelation       Folder     @relation(fields: [folderId], references: [id])
   date DateTime @default(now())
-  systemName String
   description String?
   physicalLocation String?
+  uploadFilename   String // name on upload
+  storedFilename   String   @unique // name on FileSystem
 
   @@index([systemName])
   @@index([description])

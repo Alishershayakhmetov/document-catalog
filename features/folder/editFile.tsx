@@ -1,7 +1,7 @@
 import { FileCardInfoState } from "@/shared/types/global";
 import { formatDate } from "@/utils/dateUtils";
 import { X } from "lucide-react";
-import { SubmitEvent, useState } from "react";
+import { SubmitEvent } from "react";
 
 type Props = {
   closeEditModal: () => void;

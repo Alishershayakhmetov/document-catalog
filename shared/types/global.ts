@@ -18,6 +18,7 @@ export type FileCardInfo = {
   systemName: string | null,
   physicalLocation: string | null | undefined,
   description: string | null,
+  mimeType?: string | null | undefined
 }
 
 export type FileCardInfoState = {

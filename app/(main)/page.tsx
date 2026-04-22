@@ -132,7 +132,7 @@ export default function FoldersPage() {
                   onClick={() => setIsManageCategoryModalOpen(true)}
                 >
                   <ArrowUpDown className="h-4 w-4" />
-                  Создание<br/>Категорий 
+                    Категории
                 </button>
               </div>
             </div>
@@ -172,31 +172,14 @@ export default function FoldersPage() {
               <div className="p-10 text-center text-gray-500">Загрузка...</div>
             ) : error ? (
               <div className="p-10 text-center text-red-500">Ошибка загрузки</div>
-            ) : !isEmpty ? (
-              hasSearch
+            ) : hasSearch
                 ? <SearchResultList results={searchResults} />
                 : (
                   <FolderList
                     folders={filteredFolders}
                     onCategoryClick={(path) => setLastClickedCategoryPath(path)}
                   />
-                )
-            ) : (
-              <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-                <p className="text-lg font-semibold text-gray-900">
-                  {hasSearch ? "Ничего не найдено" : `Пока нет папок ${!isParamEmpty ? "с данными параметрами" : ""}`}
-                </p>
-                {!hasSearch && isParamEmpty && (
-                  <div>
-                    <p className="mt-2 text-sm text-gray-500">Создайте свою первую папку</p>
-                    <button onClick={() => openModal()} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-3 text-sm font-medium text-white transition hover:opacity-90">
-                      <Plus className="h-5 w-5" />
-                      Создать Папку
-                    </button>
-                  </div>
                 )}
-              </div>
-            )}
           </div>
         </div>
       </div>

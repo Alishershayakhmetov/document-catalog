@@ -30,6 +30,6 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts",
     "declarations.d.ts"
-  ],
+, "recreate_document.ts"  ],
   "exclude": ["node_modules"]
 }

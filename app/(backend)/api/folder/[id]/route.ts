@@ -4,6 +4,9 @@ import {
   parseFilesFormData,
   saveFilesToFolder,
 } from "@/lib/server/file-upload.service";
+import { promises as fs } from "fs";
+
+export const UPLOAD_DIR = process.env.UPLOAD_DIR!;
 
 export async function GET(
   _request: Request,
@@ -24,7 +27,8 @@ export async function GET(
           date: true,
           systemName: true,
           physicalLocation: true,
-          description: true
+          description: true,
+          mimeType: true
         },
         orderBy: {
           updatedAt: "desc"
@@ -96,6 +100,7 @@ export async function DELETE(
     await prisma.folder.delete({
       where: { id },
     });
+    await fs.rmdir(UPLOAD_DIR + "/" + folder.id)
 
     return NextResponse.json({ message: "Folder deleted successfully" });
   } catch (error: any) {

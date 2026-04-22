@@ -361,7 +361,7 @@ export default function FolderDetailsPage() {
 
             {isDeleteMode && (
               <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Выберите файлы из списка, а затем снова нажмите кнопку "Удалить".
+                Выберите файлы из списка, а затем снова нажмите кнопку &quot;Удалить&quot;.
               </div>
             )}
 

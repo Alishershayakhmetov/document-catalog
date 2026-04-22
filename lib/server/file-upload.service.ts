@@ -53,7 +53,7 @@ export async function saveFilesToFolder(params: {
       const createdFile = await prisma.file.create({
         data: {
           folderId,
-          originalFilename: file.name,
+          uploadFilename: file.name,
           storedFilename: storedName,
           mimeType: file.type,
           fileSize: file.size,
@@ -64,7 +64,6 @@ export async function saveFilesToFolder(params: {
         },
       });
       createdFileIds.push(createdFile.id); // track before next iteration
-
       createdFiles.push(createdFile);
     }
 

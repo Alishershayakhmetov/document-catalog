@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { CategoryType } from "@/shared/types/global";
 import { createId } from '@paralleldrive/cuid2';
 
 export async function GET() {
@@ -86,15 +85,6 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-
-function isValidCategoryType(value: unknown): value is CategoryType {
-  return (
-    value === "mall" ||
-    value === "documentation" ||
-    value === "catalog" ||
-    value === "subcatalog"
-  );
 }
 
 export async function PATCH(request: Request) {
