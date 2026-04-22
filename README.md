@@ -61,29 +61,31 @@ UPLOAD_DIR="../uploads"
 psql -U postgres -c "CREATE DATABASE ИМЯ_БД;"
 ```
 
-### 5. Применение миграций Prisma
+### 5. Применение миграций Prisma и генерация клиента
 
 ```bash
 npx prisma migrate deploy
+npx prisma generate
 ```
 
 Если запускаете впервые в разработке и хотите заодно сгенерировать клиент:
 
 ```bash
+npx prisma migrate dev
 npx prisma generate
-npx prisma migrate deploy
 ```
 
-### 6. Сборка проекта
+### 6. Сборка проекта и Запуск в продакшене
 
 ```bash
 npm run build
+npm start
 ```
 
-### 7. Запуск в продакшене
+### 6.1 Запуск в режиме разработки
 
 ```bash
-npm start
+npm run dev
 ```
 
 По умолчанию приложение запустится на порту **3000**.  
