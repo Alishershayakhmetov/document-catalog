@@ -3,12 +3,11 @@ module.exports = {
     {
       name: "catalog_project",
       script: "npm",
-      args: "start",
+      args: "run start",
       cwd: "C:/путь/к/проекту",
-      env: {
-        NODE_ENV: "production",
-        PORT: 3000
-      }
+      instances: 1,
+      autorestart: true,
+      watch: false
     }
   ]
 };
