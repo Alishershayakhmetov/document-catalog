@@ -2,10 +2,11 @@ module.exports = {
   apps: [
     {
       name: "catalog_project",
-      script: "npm",
-      args: "run start",
+      script: "./node_modules/next/dist/bin/next",
+      args: "start -p 3000",
       cwd: "C:/путь/к/проекту",
-      instances: 1,
+      exec_mode: "fork", // "cluster" prod
+      instances: 1, // max
       autorestart: true,
       watch: false
     }
